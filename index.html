@@ -488,6 +488,7 @@
                         }
 
                         const frames = [];
+                        const bleed = 3; // 🌟 ขยายกรอบออก 3 pixel เพื่อลบขอบสีที่หลงเหลือ
                         bounds.forEach(b => {
                             const w = b.maxX - b.minX + 1;
                             const h = b.maxY - b.minY + 1;
@@ -495,10 +496,16 @@
                             if (b.count > 20000 && w > 100 && h > 100) { 
                                 const fillRatio = b.count / area;
                                 if (fillRatio > 0.5) {
-                                    frames.push({ id: b.id, x: b.minX, y: b.minY, w: w, h: h });
+                                    frames.push({ 
+                                        id: b.id, 
+                                        x: b.minX - bleed, 
+                                        y: b.minY - bleed, 
+                                        w: w + (bleed * 2), 
+                                        h: h + (bleed * 2) 
+                                    });
                                 }
                             }
-                        });
+                        }); 
                         frames.sort((a, b) => a.id - b.id);
 
                         const overlayCanvas = document.createElement('canvas');
