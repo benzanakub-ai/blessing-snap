@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BLESSING SNAP - Photobooth</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        :root { --bg-color: #080808; --surface-color: #121212; --surface-hover: #1e1e1e; --border-color: #2a2a2a; --accent-white: #ffffff; --text-primary: #f5f5f5; --text-muted: #888888; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: center; }
+        
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.4s ease; z-index: 1; pointer-events: none; }
+        .screen.active { opacity: 1; visibility: visible; z-index: 10; pointer-events: auto; }
+        
+        .btn { background: var(--accent-white); color: #000000; border: none; padding: 14px 32px; font-size: 1rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border-radius: 40px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; width: 100%; }
+        .btn:hover { transform: scale(1.04); background: #e6e6e6; }
+        .btn-secondary { background: transparent; color: var(--accent-white); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background: var(--surface-hover); border-color: var(--accent-white); }
+        
+        .brand-header { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; letter-spacing: 6px; font-size: 1.2rem; font-weight: 900; color: var(--accent-white); z-index: 20; text-transform: uppercase; pointer-events: none; }
+        .brand-badge { background: var(--accent-white); color: #000; padding: 2px 6px; font-size: 0.7rem; border-radius: 3px; font-weight: 900; }
+        
+        .ad-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; pointer-events: none; }
+        .ad-video { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; filter: brightness(0.65) contrast(1.1); pointer-events: none; }
+        .ad-slideshow-img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; transition: opacity 1s ease-in-out; opacity: 0; pointer-events: none; z-index: 2; }
+        
+        #screen-1 { cursor: pointer; } 
+        .idle-overlay { position: relative; z-index: 5; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px; background: rgba(0, 0, 0, 0.4); padding: 40px 60px; border-radius: 24px; backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.1); pointer-events: none; transition: opacity 0.5s ease; }
+        
+        .idle-title { font-size: 3.5rem; font-weight: 900; letter-spacing: 12px; color: var(--accent-white); }
+        .idle-subtitle { font-size: 1rem; letter-spacing: 4px; color: var(--text-muted); text-transform: uppercase; }
+        .tap-prompt { margin-top: 20px; font-size: 1.2rem; font-weight: 700; color: var(--accent-white); padding: 16px 36px; border: 2px solid var(--accent-white); border-radius: 50px; animation: pulseGlow 1.8s infinite alternate ease-in-out; }
+        @keyframes pulseGlow { 0% { box-shadow: 0 0 10px rgba(255,255,255,0.2); transform: scale(1); } 100% { box-shadow: 0 0 30px rgba(255,255,255,0.7); transform: scale(1.05); } }
+        
+        #screen-2 { padding: 80px 20px 40px; background: radial-gradient(circle at center, #181818 0%, #080808 100%); }
+        .section-header { text-align: center; margin-bottom: 24px; }
+        .section-title { font-size: 2rem; font-weight: 800; letter-spacing: 4px; margin-bottom: 8px; }
+        .section-desc { font-size: 0.95rem; color: var(--text-muted); }
+        .carousel-wrapper { position: relative; width: 100%; max-width: 1000px; display: flex; align-items: center; margin: 0 auto; }
+        .carousel-track { display: flex; gap: 30px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 30px 10px; width: 100%; scrollbar-width: none; }
+        .template-card { flex: 0 0 280px; height: 420px; scroll-snap-align: center; background: var(--surface-color); border: 2px solid var(--border-color); border-radius: 16px; padding: 16px; cursor: pointer; transition: all 0.3s; display: flex; flex-direction: column;}
+        .template-card.selected { border-color: var(--accent-white); box-shadow: 0 0 30px rgba(255,255,255,0.25); background: #1a1a1a; transform: translateY(-8px); }
+        .template-preview-container { width: 100%; flex: 1; background: #fff; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;}
+        .template-info { text-align: center; padding-top: 5px; }
+        .template-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; color: var(--accent-white); text-transform: uppercase; letter-spacing: 1px;}
+        .nav-btn { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid #444; width: 48px; height: 48px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; }
+        .carousel-controls { display: flex; gap: 16px; margin-top: 20px; justify-content: center;}
+
+        #screen-3 { padding: 70px 20px 20px; background: #050505; }
+        
+        /* 🌟 ขยายจอภาพให้เต็ม */
+        .camera-workspace { display: flex; gap: 24px; width: 100%; max-width: 1400px; height: calc(100% - 90px); align-items: center; justify-content: center; }        
+        .viewfinder-container { position: relative; flex: 1; aspect-ratio: 16 / 9; max-height: 80vh; background: #000; border-radius: 16px; overflow: hidden; display: flex; justify-content: center; align-items: center; }        
+        video#webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); pointer-events: none; }        
+        
+        /* 🌟 กล่องไกด์ไลน์ (Guide Frame) */
+        .guide-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 3px dashed rgba(255, 255, 255, 0.85); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55); pointer-events: none; z-index: 20; transition: all 0.3s ease; }
+
+        .filter-bw-classic { filter: grayscale(100%) contrast(140%) brightness(118%); }
+        .filter-bw-noir { filter: grayscale(100%) contrast(160%) brightness(85%); }
+        .filter-bw-soft { filter: grayscale(100%) contrast(95%) brightness(110%); }
+        .filter-color { filter: brightness(105%) contrast(102%); }
+        
+        .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 25; opacity: 0; visibility: hidden; }
+        .countdown-overlay.active { opacity: 1; visibility: visible; }
+        .countdown-number { font-size: 8rem; font-weight: 900; color: #fff; text-shadow: 0 0 40px rgba(255,255,255,0.8); }
+        .flash-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 50; opacity: 0; pointer-events: none; }
+        .flash-screen.flash { animation: flashAnim 0.35s ease-out forwards; }
+        @keyframes flashAnim { 0% { opacity: 1; } 100% { opacity: 0; } }
+        
+        .camera-panel { width: 320px; background: var(--surface-color); padding: 24px; border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 20px; }
+        .filter-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .filter-btn { background: #1e1e1e; border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: 0.2s;}
+        .filter-btn:hover { background: #333; }
+        .filter-btn.active { background: #fff; color: #000; font-weight: bold;}
+        .shots-status { display: flex; gap: 10px; flex-wrap: wrap; }
+        .shot-badge { flex: 1; min-width: 40px; height: 40px; background: #1a1a1a; border: 1px dashed #444; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #666; font-weight: bold;}
+        .shot-badge.captured { background: #fff; color: #000; border-style: solid; }
+
+        .result-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .result-overlay.active { opacity: 1; visibility: visible; }
+        .result-container { display: flex; gap: 30px; align-items: center; max-width: 900px; }
+        .canvas-preview-wrapper { background: #000; padding: 12px; border-radius: 8px; max-height: 75vh; }
+        
+        .canvas-inner-wrapper { position: relative; display: inline-block; max-height: 70vh; }
+        canvas#strip-canvas { max-height: 70vh; max-width: 100%; height: auto; object-fit: contain; display: block; }
+        #retake-buttons-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .retake-frame-zone { position: absolute; pointer-events: none; }
+        .retake-icon-btn { position: absolute; top: 12px; right: 12px; background: rgba(0, 0, 0, 0.65); color: #ffffff; border: 2px solid #ffffff; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 10; backdrop-filter: blur(4px); }
+        .retake-icon-btn:hover { background: #ffffff; color: #000000; transform: scale(1.15); }
+        
+        .result-actions { display: flex; flex-direction: column; gap: 16px; min-width: 240px; }
+        .qr-box { background: #fff; padding: 15px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; }
+        #qrcode { width: 140px; height: 140px; }
+        #qr-status { color: #333; font-size: 0.85rem; font-weight: bold; margin-top: 12px; text-transform: uppercase; text-align: center;}
+        
+        .qty-control-wrapper { background: #1e1e1e; border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+        .qty-label { font-size: 0.9rem; font-weight: bold; color: #aaa; }
+        .qty-buttons { display: flex; align-items: center; gap: 14px; }
+        .qty-btn { background: #2a2a2a; color: #fff; border: 1px solid #444; width: 38px; height: 38px; border-radius: 50%; font-size: 1.3rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .qty-btn:active { background: #fff; color: #000; transform: scale(0.92); }
+        #print-copies-count { font-size: 1.3rem; font-weight: 900; min-width: 24px; text-align: center; color: #4ade80; }
+
+        #loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s; }
+        #loading-overlay.active { opacity: 1; visibility: visible; }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;}
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 850px) { .camera-workspace { flex-direction: column; } .result-container { flex-direction: column; } }
+        
+        @media print {
+            @page { size: A4 portrait; margin: 0mm; }
+            html, body { width: 210mm !important; height: 297mm !important; margin: 0 !important; padding: 0 !important; background: #ffffff !important; overflow: hidden !important; }
+            .brand-header, #screen-1, #screen-2, #screen-3, #loading-overlay { display: none !important; }
+            #screen-3, .result-overlay, .result-container, .canvas-preview-wrapper, .canvas-inner-wrapper { display: block !important; position: static !important; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; opacity: 1 !important; visibility: visible !important; }
+            .camera-workspace, .result-actions, .section-title, #retake-buttons-container, #back-to-templates-btn { display: none !important; }
+            canvas#strip-canvas { display: none !important; } 
+            canvas#print-canvas { display: block !important; visibility: visible !important; width: 210mm !important; height: 297mm !important; max-width: none !important; max-height: none !important; object-fit: contain !important; position: fixed !important; top: 0 !important; left: 0 !important; margin: 0 !important; padding: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="brand-header">BLESSING SNAP <span class="brand-badge">B&W</span></div>
+
+    <section id="screen-1" class="screen active">
+        <div class="ad-container">
+            <video id="ad-video" class="ad-video" autoplay loop muted playsinline></video>
+            <img id="ad-img-1" class="ad-slideshow-img" src="">
+            <img id="ad-img-2" class="ad-slideshow-img" src="">
+        </div>
+        <div class="idle-overlay" id="idle-overlay-box">
+            <div class="idle-title">BLESSING SNAP</div>
+            <div class="idle-subtitle">Chroma Color Photobooth</div>
+            <div class="tap-prompt">TOUCH TO START / แตะเพื่อเริ่ม</div>
+        </div>
+    </section>
+
+    <section id="screen-2" class="screen">
+        <div class="section-header">
+            <div class="section-title">CHOOSE TEMPLATE</div>
+            <div class="section-desc">ระบบจะดึงภาพตามกรอบสีที่ตั้งไว้ใน Canva โดยอัตโนมัติ</div>
+        </div>
+        <div class="carousel-wrapper">
+            <button class="nav-btn" id="prev-btn">&lt;</button>
+            <div class="carousel-track" id="carousel-track">
+                <div style="width: 100%; text-align: center; color: #888; margin-top: 50px;">กำลังโหลดเทมเพลต...</div>
+            </div>
+            <button class="nav-btn" id="next-btn">&gt;</button>
+        </div>
+        <div class="carousel-controls">
+            <button class="btn" id="confirm-template-btn" style="width: 250px; font-size: 1.2rem; padding: 18px 32px;">เลือกกรอบนี้ &rarr;</button>
+        </div>
+    </section>
+
+    <section id="screen-3" class="screen">
+        <button class="btn btn-secondary" id="back-to-templates-btn" style="position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 18px; z-index: 30;">&larr; BACK</button>
+        <div class="camera-workspace">
+            <div class="viewfinder-container">
+                <video id="webcam" class="filter-color" autoplay playsinline muted></video>
+                <!-- 🌟 เพิ่มกล่องไกด์ไลน์ -->
+                <div id="camera-guide" class="guide-box" style="display: none;"></div>
+                
+                <div class="countdown-overlay" id="countdown-overlay"><div class="countdown-number" id="countdown-number">3</div></div>
+                <div class="flash-screen" id="flash-screen"></div>
+            </div>
+            
+            <div class="camera-panel">
+                <div style="margin-bottom: 12px;">
+                    <div style="font-weight: 700; color: #888; font-size: 0.75rem; margin-bottom: 6px; letter-spacing: 1px;">📹 CAMERA SOURCE</div>
+                    <select id="camera-select" style="width: 100%; background: #1e1e1e; border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; outline: none; cursor: pointer; appearance: auto;">
+                        <option value="">กำลังค้นหากล้อง...</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <div style="font-weight: 700; color: #888; margin-bottom: 6px; font-size: 0.75rem; letter-spacing: 1px;">🎨 PHOTO FILTER</div>
+                    <div class="filter-options">
+                        <button class="filter-btn" data-filter="bw-classic">B&W CLASSIC</button>
+                        <button class="filter-btn" data-filter="bw-noir">B&W NOIR</button>
+                        <button class="filter-btn" data-filter="bw-soft">B&W SOFT</button>
+                        <button class="filter-btn active" data-filter="color">COLOR</button>
+                    </div>
+                </div>
+
+                <div style="flex-grow: 1;">
+                    <div style="font-weight: 700; color: #888; margin-bottom: 6px; font-size: 0.75rem; letter-spacing: 1px;">📸 SHOT STATUS</div>
+                    <div class="shots-status" id="shots-status-container"></div>
+                </div>
+
+                <div id="start-shoot-container" style="text-align: center; margin-top: auto; padding-top: 10px;">
+                    <button id="manual-start-btn" class="btn" style="background: #4ade80; color: #000; font-size: 1.1rem; padding: 18px 0; border-radius: 12px; box-shadow: 0 4px 15px rgba(74, 222, 128, 0.25);">
+                        เริ่มถ่ายภาพ
+                    </button>
+                    <div id="auto-shoot-msg" style="text-align: center; font-weight: bold; color: #4ade80; font-size: 1rem; border: 2px dashed #4ade80; padding: 16px; border-radius: 10px; display: none;">
+                        กำลังดำเนินการถ่ายภาพ...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-overlay" id="result-overlay">
+            <div class="section-title" style="margin-bottom: 16px;">YOUR BLESSING SNAP PHOTO</div>
+            <div class="result-container">
+                <div class="canvas-preview-wrapper">
+                    <div class="canvas-inner-wrapper">
+                        <canvas id="strip-canvas"></canvas>
+                        <canvas id="print-canvas" style="display: none;"></canvas>
+                        <div id="retake-buttons-container"></div>
+                    </div>
+                </div>
+                <div class="result-actions">
+                    <div class="qr-box">
+                        <div id="qrcode"></div>
+                        <div id="qr-status">กำลังสร้างรูปภาพ...</div>
+                    </div>
+
+                    <div class="qty-control-wrapper">
+                        <span class="qty-label">จำนวนพิมพ์ (ใบ)</span>
+                        <div class="qty-buttons">
+                            <button type="button" class="qty-btn" id="qty-minus">-</button>
+                            <span id="print-copies-count">1</span>
+                            <button type="button" class="qty-btn" id="qty-plus">+</button>
+                        </div>
+                    </div>
+
+                    <button class="btn" id="download-btn">DOWNLOAD PHOTO</button>
+                    <button class="btn" id="print-btn" style="background: #16a34a; color: white;">PRINT / สั่งพิมพ์</button>
+                    <button class="btn btn-secondary" id="retake-btn">RETAKE ALL / ถ่ายใหม่ทั้งหมด</button>
+                    <button class="btn btn-secondary" id="home-btn">FINISH / กลับหน้าหลัก</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <h2 style="color: white; letter-spacing: 2px;">กำลังเตรียมเทมเพลต...</h2>
+        <p style="color: #aaa; margin-top: 10px;">กรุณารอสักครู่</p>
+    </div>
+
+    <canvas id="capture-canvas" style="display: none;"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA57qyFTexeNyRMTTLUJMNC5Bm24L_K0io",
+            authDomain: "blessing-snap.firebaseapp.com",
+            projectId: "blessing-snap",
+            storageBucket: "blessing-snap.firebasestorage.app",
+            messagingSenderId: "324842012527",
+            appId: "1:324842012527:web:96a235fbf494d39ce9f29a",
+            measurementId: "G-8H8D35R54J"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        let kioskConfig = { imgbbApiKey: "", adVideoUrl: "", themes: [], ads: [] };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const state = { 
+                currentScreen: 1, selectedThemeUrl: null, totalShots: 3,         
+                activeLayout: [], processedOverlayCanvas: null, 
+                selectedFilter: 'color', 
+                capturedPhotos: [], isShooting: false, mediaStream: null,
+                videoDevices: [], currentDeviceId: null 
+            };
+            
+            const CHROMA_TARGETS = [
+                { id: 1, r: 240, g: 75, b: 67 },   
+                { id: 2, r: 168, g: 208, b: 93 },  
+                { id: 3, r: 107, g: 187, b: 194 }, 
+                { id: 4, r: 255, g: 0, b: 255 }     
+            ];
+
+            let audioCtx = null;
+            try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+            
+            function playBeep(freq = 600, duration = 0.1) {
+                try {
+                    if (!audioCtx) return;
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                    osc.type = 'sine'; osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + duration);
+                } catch(e) { console.error(e); }
+            }
+
+            function switchScreen(screenNum) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                const target = document.getElementById(`screen-${screenNum}`);
+                if (target) { target.classList.add('active'); state.currentScreen = screenNum; }
+                
+                if (screenNum === 1) {
+                     stopCamera();
+                     state.isShooting = false;
+                     document.getElementById('result-overlay').classList.remove('active');
+                } else if (screenNum === 3) {
+                     initCamera(); 
+                } else if (state.mediaStream) {
+                     stopCamera();
+                }
+            }
+
+            // 🌟 ผูกอีเวนต์คลิกหน้าจออย่างปลอดภัย
+            const screen1 = document.getElementById('screen-1');
+            if (screen1) {
+                screen1.addEventListener('click', () => { 
+                    playBeep(); switchScreen(2); 
+                });
+            }
+
+            document.getElementById('prev-btn').addEventListener('click', () => { document.getElementById('carousel-track').scrollBy({ left: -300, behavior: 'smooth' }); });
+            document.getElementById('next-btn').addEventListener('click', () => { document.getElementById('carousel-track').scrollBy({ left: 300, behavior: 'smooth' }); });
+            document.getElementById('back-to-templates-btn').addEventListener('click', () => { playBeep(); switchScreen(2); });
+
+            let idleTimeout;
+            let slideInterval;
+            let currentAdIndex = 0;
+            let isAdPlaying = false;
+            const IDLE_TIME_MS = 5 * 60 * 1000;
+
+            function showAds() {
+                if (!kioskConfig.ads || kioskConfig.ads.length === 0) return;
+                isAdPlaying = true;
+                const idleBox = document.getElementById('idle-overlay-box');
+                if(idleBox) idleBox.style.opacity = '0';
+                startAdSlideshow();
+            }
+
+            function hideAds() {
+                isAdPlaying = false;
+                clearInterval(slideInterval);
+                const idleBox = document.getElementById('idle-overlay-box');
+                if(idleBox) idleBox.style.opacity = '1';
+                const img1 = document.getElementById('ad-img-1');
+                const img2 = document.getElementById('ad-img-2');
+                if(img1) img1.style.opacity = '0';
+                if(img2) img2.style.opacity = '0';
+            }
+
+            function startAdSlideshow() {
+                const img1 = document.getElementById('ad-img-1');
+                const img2 = document.getElementById('ad-img-2');
+                if(!img1 || !img2) return;
+                
+                let isImg1Active = true;
+                img1.src = kioskConfig.ads[0];
+                img1.style.opacity = '1';
+                
+                if (kioskConfig.ads.length > 1) {
+                    clearInterval(slideInterval);
+                    slideInterval = setInterval(() => {
+                        currentAdIndex = (currentAdIndex + 1) % kioskConfig.ads.length;
+                        const nextImgUrl = kioskConfig.ads[currentAdIndex];
+
+                        if (isImg1Active) {
+                            img2.src = nextImgUrl;
+                            img2.style.opacity = '1';
+                            img1.style.opacity = '0';
+                        } else {
+                            img1.src = nextImgUrl;
+                            img1.style.opacity = '1';
+                            img2.style.opacity = '0';
+                        }
+                        isImg1Active = !isImg1Active;
+                    }, 8000);
+                }
+            }
+
+            // 🌟 ปรับระบบดักจับ Mousemove / Click ป้องกันการซ้อนทับกัน
+            function resetIdleTimer(e) {
+                clearTimeout(idleTimeout);
+                
+                if (isAdPlaying) {
+                    hideAds(); 
+                    switchScreen(1); 
+                    if (e && e.type !== 'mousemove') { 
+                        e.preventDefault(); 
+                    }
+                }
+
+                idleTimeout = setTimeout(() => {
+                    if (state.currentScreen === 1) {
+                        showAds();
+                    } else {
+                        switchScreen(1);
+                        showAds();
+                    }
+                }, IDLE_TIME_MS);
+            }
+
+            ['mousedown', 'touchstart', 'click', 'mousemove'].forEach(evt => {
+                window.addEventListener(evt, resetIdleTimer); 
+            });
+
+            async function loadFirebaseConfig() {
+                try {
+                    const snap = await getDoc(doc(db, "config", "settings"));
+                    if (snap.exists()) {
+                        kioskConfig = snap.data();
+                        if (kioskConfig.adVideoUrl) {
+                            const adVideo = document.getElementById('ad-video');
+                            if (adVideo) {
+                                adVideo.src = kioskConfig.adVideoUrl;
+                                adVideo.play().catch(e => console.log("รอการคลิกจอ:", e));
+                            }
+                        }
+                        renderDynamicThemes();
+                        resetIdleTimer(); 
+                    }
+                } catch(e) { console.error("โหลด Firebase ไม่สำเร็จ:", e); }
+            }
+            loadFirebaseConfig();
+
+            function renderDynamicThemes() {
+                const track = document.getElementById('carousel-track');
+                if (kioskConfig.themes && kioskConfig.themes.length > 0) {
+                    track.innerHTML = ""; 
+                    kioskConfig.themes.forEach((themeData, index) => {
+                        const url = typeof themeData === 'object' && themeData !== null ? themeData.url : themeData;
+                        const name = typeof themeData === 'object' && themeData !== null && themeData.name ? themeData.name : `THEME ${index + 1}`;
+                        
+                        const card = document.createElement("div");
+                        card.className = `template-card ${index === 0 ? "selected" : ""}`;
+                        card.innerHTML = `
+                            <div class="template-preview-container">
+                                <img src="${url}" style="width: 100%; height: 100%; object-fit: contain;">
+                            </div>
+                            <div class="template-info">
+                                <div class="template-title">${name}</div>
+                            </div>
+                        `;
+                        card.addEventListener("click", () => {
+                            document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+                            card.classList.add('selected'); 
+                            state.selectedThemeUrl = url; 
+                            playBeep();
+                        });
+                        track.appendChild(card);
+                    });
+                    const firstTheme = kioskConfig.themes[0];
+                    state.selectedThemeUrl = typeof firstTheme === 'object' && firstTheme !== null ? firstTheme.url : firstTheme;
+                } else {
+                    track.innerHTML = '<div style="width: 100%; text-align: center; color: #888; margin-top: 50px;">ยังไม่มีเทมเพลตในระบบ กรุณาเพิ่มจากหน้า Admin</div>';
+                }
+            }
+
+            function analyzeAndProcessTemplate(imageSrc) {
+                return new Promise((resolve) => {
+                    const img = new Image(); img.crossOrigin = "anonymous";
+                    img.onload = () => {
+                        const width = 1240; const height = 1754; 
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        const imgData = ctx.getImageData(0, 0, width, height).data;
+                        const bounds = CHROMA_TARGETS.map(t => ({ 
+                            id: t.id, minX: width, maxX: 0, minY: height, maxY: 0, count: 0 
+                        }));
+
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                const idx = (y * width + x) * 4;
+                                const r = imgData[idx], g = imgData[idx+1], b = imgData[idx+2], a = imgData[idx+3];
+                                if (a < 100) continue; 
+                                for (let i = 0; i < CHROMA_TARGETS.length; i++) {
+                                    const t = CHROMA_TARGETS[i];
+                                    const dist = Math.sqrt((r-t.r)**2 + (g-t.g)**2 + (b-t.b)**2);
+                                    if (dist < 45) { 
+                                        bounds[i].minX = Math.min(bounds[i].minX, x);
+                                        bounds[i].maxX = Math.max(bounds[i].maxX, x);
+                                        bounds[i].minY = Math.min(bounds[i].minY, y);
+                                        bounds[i].maxY = Math.max(bounds[i].maxY, y);
+                                        bounds[i].count++;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        const frames = [];
+                        bounds.forEach(b => {
+                            const w = b.maxX - b.minX + 1;
+                            const h = b.maxY - b.minY + 1;
+                            const area = w * h;
+                            if (b.count > 20000 && w > 100 && h > 100) { 
+                                const fillRatio = b.count / area;
+                                if (fillRatio > 0.5) {
+                                    frames.push({ id: b.id, x: b.minX, y: b.minY, w: w, h: h });
+                                }
+                            }
+                        });
+                        frames.sort((a, b) => a.id - b.id);
+
+                        const overlayCanvas = document.createElement('canvas');
+                        overlayCanvas.width = width; overlayCanvas.height = height;
+                        const overlayCtx = overlayCanvas.getContext('2d');
+                        overlayCtx.drawImage(img, 0, 0, width, height);
+                        frames.forEach(f => {
+                            overlayCtx.clearRect(f.x, f.y, f.w, f.h);
+                        });
+                        resolve({ layout: frames, overlayCanvas: overlayCanvas });
+                    };
+                    img.onerror = () => resolve({ layout: [], overlayCanvas: null });
+                    img.src = imageSrc;
+                });
+            }
+
+            document.getElementById('confirm-template-btn').addEventListener('click', async () => { 
+                if (!state.selectedThemeUrl) return alert("กรุณาเลือกเทมเพลตก่อนครับ");
+                playBeep(); 
+                document.getElementById('loading-overlay').classList.add('active');
+                
+                document.getElementById('manual-start-btn').style.display = 'block';
+                document.getElementById('auto-shoot-msg').style.display = 'none';
+                state.isShooting = false;
+                
+                const result = await analyzeAndProcessTemplate(state.selectedThemeUrl);
+                state.activeLayout = result.layout; 
+                state.processedOverlayCanvas = result.overlayCanvas;
+                state.totalShots = result.layout.length > 0 ? result.layout.length : 1;
+                
+                document.getElementById('loading-overlay').classList.remove('active');
+                switchScreen(3); 
+            });
+
+            const webcamElement = document.getElementById('webcam');
+            const countdownOverlay = document.getElementById('countdown-overlay');
+            const countdownNumber = document.getElementById('countdown-number');
+            const flashScreen = document.getElementById('flash-screen');
+            const cameraSelect = document.getElementById('camera-select');
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+                    state.selectedFilter = btn.getAttribute('data-filter'); webcamElement.className = `filter-${state.selectedFilter}`; playBeep();
+                });
+            });
+
+            async function populateCameras() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    state.videoDevices = devices.filter(d => d.kind === 'videoinput');
+                    stream.getTracks().forEach(t => t.stop()); 
+
+                    cameraSelect.innerHTML = '';
+                    state.videoDevices.forEach((device, index) => {
+                        const option = document.createElement('option');
+                        option.value = device.deviceId;
+                        option.text = device.label || `Camera ${index + 1}`;
+                        cameraSelect.appendChild(option);
+                    });
+                    
+                    if (!state.currentDeviceId && state.videoDevices.length > 0) {
+                        state.currentDeviceId = state.videoDevices[0].deviceId;
+                    } else if (state.currentDeviceId) {
+                        cameraSelect.value = state.currentDeviceId;
+                    }
+                } catch(e) {
+                    console.error("Error populating cameras:", e);
+                }
+            }
+
+            cameraSelect.addEventListener('change', (e) => {
+                state.currentDeviceId = e.target.value;
+                playBeep();
+                initCamera(); 
+            });
+
+            async function initCamera() {
+                try {
+                    if (state.videoDevices.length === 0) {
+                        await populateCameras();
+                    }
+
+                    const constraints = {
+                        video: {
+                            deviceId: state.currentDeviceId ? { exact: state.currentDeviceId } : undefined,
+                            width: { ideal: 1920, max: 3840 },
+                            height: { ideal: 1080, max: 2160 },
+                            frameRate: { ideal: 30 }
+                        },
+                        audio: false
+                    };
+                    
+                    stopCamera(); 
+
+                    state.mediaStream = await navigator.mediaDevices.getUserMedia(constraints); 
+                    webcamElement.srcObject = state.mediaStream;
+                    webcamElement.onloadedmetadata = () => { 
+                        webcamElement.play(); 
+                    };
+                } catch (err) { 
+                    try {
+                        const fallbackConstraints = {
+                            video: { deviceId: state.currentDeviceId ? { exact: state.currentDeviceId } : undefined },
+                            audio: false
+                        };
+                        state.mediaStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                        webcamElement.srcObject = state.mediaStream;
+                        webcamElement.play();
+                    } catch (fallbackErr) {
+                        alert('ไม่สามารถเข้าถึงกล้องที่เลือกได้ กรุณาอนุญาตหรือเลือกกล้องตัวอื่นครับ'); 
+                        switchScreen(2); 
+                    }
+                }
+            }
+            
+            function stopCamera() { if (state.mediaStream) { state.mediaStream.getTracks().forEach(t => t.stop()); state.mediaStream = null; webcamElement.srcObject = null; } }
+
+            document.getElementById('manual-start-btn').addEventListener('click', () => {
+                playBeep();
+                document.getElementById('manual-start-btn').style.display = 'none';
+                document.getElementById('auto-shoot-msg').style.display = 'block';
+                startShootingSequence();
+            });
+
+            // 🌟 ฟังก์ชันคำนวณและอัปเดตขนาดไกด์ไลน์ (แบบป้องกัน Error 100%)
+            function updateGuideFrame(frameIndex) {
+                try {
+                    const guide = document.getElementById('camera-guide');
+                    const frame = state.activeLayout[frameIndex];
+                    if (!guide || !frame) return;
+
+                    guide.style.display = 'block';
+                    const targetRatio = frame.w / frame.h;
+                    const containerRatio = 16 / 9;
+
+                    if (targetRatio < containerRatio) {
+                        guide.style.height = '92%';
+                        guide.style.width = (92 * (targetRatio / containerRatio)) + '%';
+                    } else {
+                        guide.style.width = '92%';
+                        guide.style.height = (92 * (containerRatio / targetRatio)) + '%';
+                    }
+                } catch(e) { console.error("Guide error:", e); }
+            }
+
+            function startShootingSequence() {
+                if (state.isShooting) return;
+                state.isShooting = true; state.capturedPhotos = []; 
+                const shotsStatus = document.getElementById('shots-status-container'); shotsStatus.innerHTML = '';
+                for (let i = 1; i <= state.totalShots; i++) {
+                    const badge = document.createElement('div'); badge.className = 'shot-badge'; badge.id = `shot-${i}`; badge.textContent = `S${i}`;
+                    shotsStatus.appendChild(badge);
+                }
+                setTimeout(() => shootNextPhoto(1), 1000); 
+            }
+
+            function initiateRetake(index) {
+                playBeep(400, 0.08);
+                document.getElementById('result-overlay').classList.remove('active');
+                state.isShooting = true; 
+                
+                document.getElementById('qrcode').innerHTML = ""; 
+                document.getElementById('qr-status').textContent = "รออัปโหลดใหม่...";
+
+                document.querySelectorAll('.shot-badge').forEach(b => b.classList.remove('captured'));
+                const badge = document.getElementById(`shot-${index + 1}`);
+                if (badge) badge.textContent = `S${index + 1}`;
+
+                shootSinglePhoto(index);
+            }
+
+            function shootSinglePhoto(index) {
+                updateGuideFrame(index); 
+                let count = 3; countdownOverlay.classList.add('active'); countdownNumber.textContent = count; playBeep();
+                const timer = setInterval(() => {
+                    count--;
+                    if (count > 0) { countdownNumber.textContent = count; playBeep(); } 
+                    else {
+                        clearInterval(timer); countdownOverlay.classList.remove('active');
+                        flashScreen.classList.add('flash'); 
+                        captureCurrentFrame(index);
+                        
+                        const badge = document.getElementById(`shot-${index + 1}`);
+                        if (badge) { badge.classList.add('captured'); badge.textContent = `✓ S${index + 1}`; }
+                        
+                        setTimeout(() => { flashScreen.classList.remove('flash'); renderFinalPhotoStrip(); }, 1200);
+                    }
+                }, 1000);
+            }
+
+            function shootNextPhoto(shotIndex) {
+                if (shotIndex > state.totalShots) { setTimeout(renderFinalPhotoStrip, 600); return; }
+                updateGuideFrame(shotIndex - 1); 
+                let count = 3; countdownOverlay.classList.add('active'); countdownNumber.textContent = count; playBeep();
+                const timer = setInterval(() => {
+                    count--;
+                    if (count > 0) { countdownNumber.textContent = count; playBeep(); } 
+                    else {
+                        clearInterval(timer); countdownOverlay.classList.remove('active');
+                        flashScreen.classList.add('flash'); 
+                        captureCurrentFrame();
+                        document.getElementById(`shot-${shotIndex}`).classList.add('captured');
+                        setTimeout(() => { flashScreen.classList.remove('flash'); shootNextPhoto(shotIndex + 1); }, 1200);
+                    }
+                }, 1000);
+            }
+
+            function captureCurrentFrame(replaceIndex = -1) {
+                const hiddenCanvas = document.getElementById('capture-canvas'); 
+                const ctx = hiddenCanvas.getContext('2d');
+                
+                hiddenCanvas.width = webcamElement.videoWidth || 1920; 
+                hiddenCanvas.height = webcamElement.videoHeight || 1080;
+                
+                ctx.save(); 
+                ctx.translate(hiddenCanvas.width, 0); 
+                ctx.scale(-1, 1); 
+                ctx.drawImage(webcamElement, 0, 0, hiddenCanvas.width, hiddenCanvas.height); 
+                ctx.restore();
+                
+                const imgData = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height); 
+                const data = imgData.data;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    let r = data[i], g = data[i + 1], b = data[i + 2];
+
+                    if (state.selectedFilter !== 'color') {
+                        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                        
+                        if (state.selectedFilter === 'bw-classic') {
+                            gray = Math.pow(gray / 255, 0.85) * 255;
+                            gray = (gray - 128) * 1.3 + 138;
+                        } else if (state.selectedFilter === 'bw-noir') {
+                            gray = (gray - 128) * 1.55 + 115;
+                        } else if (state.selectedFilter === 'bw-soft') {
+                            gray = Math.pow(gray / 255, 0.8) * 255;
+                            gray = (gray - 128) * 0.95 + 140;
+                        }
+                        
+                        data[i] = data[i+1] = data[i+2] = Math.max(0, Math.min(255, gray));
+                    } else {
+                        data[i] = Math.min(255, r * 1.05 + 8);
+                        data[i + 1] = Math.min(255, g * 1.03 + 5);
+                        data[i + 2] = Math.min(255, b * 1.02 + 5);
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+                
+                const dataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.95);
+                if (replaceIndex >= 0) {
+                    state.capturedPhotos[replaceIndex] = dataUrl;
+                } else {
+                    state.capturedPhotos.push(dataUrl);
+                }
+            }
+
+            function renderFinalPhotoStrip() {
+                const guide = document.getElementById('camera-guide');
+                if(guide) guide.style.display = 'none'; 
+                
+                const photos = state.capturedPhotos; if (photos.length < state.totalShots) return;
+                const stripCanvas = document.getElementById('strip-canvas');
+                const printCanvas = document.getElementById('print-canvas'); 
+                
+                const ctx = stripCanvas.getContext('2d'); 
+                const printCtx = printCanvas.getContext('2d');
+
+                const images = []; let loaded = 0;
+                photos.forEach((src, idx) => {
+                    const img = new Image();
+                    img.onload = () => { 
+                        images[idx] = img; loaded++; 
+                        if (loaded === state.totalShots) drawStripLayout(ctx, printCtx, stripCanvas, printCanvas, images); 
+                    };
+                    img.src = src;
+                });
+            }
+
+            function drawStripLayout(ctx, printCtx, stripCanvas, printCanvas, images) {
+                const width = 1240; 
+                const height = 1754; 
+                
+                stripCanvas.width = width; stripCanvas.height = height;
+                printCanvas.width = width; printCanvas.height = height;
+        
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
+                printCtx.fillStyle = '#ffffff'; printCtx.fillRect(0, 0, width, height);
+
+                ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+                printCtx.imageSmoothingEnabled = true; printCtx.imageSmoothingQuality = 'high';
+
+                const retakeContainer = document.getElementById('retake-buttons-container');
+                retakeContainer.innerHTML = ''; 
+
+                images.forEach((img, i) => {
+                    if (img && state.activeLayout[i]) {
+                        const f = state.activeLayout[i]; 
+                        const imgRatio = img.width / img.height; 
+                        const targetRatio = f.w / f.h;
+                        let sw, sh, sx, sy;
+                
+                        if (imgRatio > targetRatio) { 
+                            sh = img.height; sw = img.height * targetRatio; sx = (img.width - sw) / 2; sy = 0; 
+                        } else { 
+                            sw = img.width; sh = img.width / targetRatio; sx = 0; sy = (img.height - sh) / 2; 
+                        }
+                        
+                        ctx.drawImage(img, sx, sy, sw, sh, f.x, f.y, f.w, f.h);
+                        printCtx.drawImage(img, sx, sy, sw, sh, f.x, f.y, f.w, f.h);
+
+                        const zone = document.createElement('div');
+                        zone.className = 'retake-frame-zone';
+                        zone.style.left = `${(f.x / width) * 100}%`;
+                        zone.style.top = `${(f.y / height) * 100}%`;
+                        zone.style.width = `${(f.w / width) * 100}%`;
+                        zone.style.height = `${(f.h / height) * 100}%`;
+                        
+                        const btn = document.createElement('div');
+                        btn.className = 'retake-icon-btn';
+                        btn.title = 'ถ่ายช็อตนี้ใหม่';
+                        btn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>`;
+                        btn.onclick = () => initiateRetake(i);
+                        
+                        zone.appendChild(btn);
+                        retakeContainer.appendChild(zone);
+
+                        const pData = printCtx.getImageData(f.x, f.y, f.w, f.h);
+                        const pd = pData.data;
+                        const fw = Math.round(f.w);
+                        const fh = Math.round(f.h);
+
+                        for (let y = 0; y < fh; y++) {
+                            for (let x = 0; x < fw; x++) {
+                                const idx = (y * fw + x) * 4;
+                                let r = pd[idx]; let g = pd[idx+1]; let b = pd[idx+2];
+                                let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                                gray = gray * 0.92; 
+                                gray = (gray - 128) * 1.1 + 128; 
+                                let finalColor = Math.max(0, Math.min(255, gray));
+                                pd[idx] = pd[idx+1] = pd[idx+2] = finalColor;
+                            }
+                        }
+                        printCtx.putImageData(pData, f.x, f.y);
+                    }
+                });
+
+                if (state.processedOverlayCanvas) {
+                    ctx.drawImage(state.processedOverlayCanvas, 0, 0, width, height);
+                    printCtx.drawImage(state.processedOverlayCanvas, 0, 0, width, height);
+                }
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'multiply';
+                ctx.fillStyle = '#fff6e3';
+                ctx.fillRect(0, 0, width, height);
+                ctx.restore();
+
+                showResultAndUpload(stripCanvas);
+            }
+
+            function showResultAndUpload(stripCanvas) {
+                document.getElementById('result-overlay').classList.add('active'); state.isShooting = false; 
+                const qrContainer = document.getElementById('qrcode'); const qrStatus = document.getElementById('qr-status');
+                qrContainer.innerHTML = ""; qrStatus.textContent = "กำลังอัปโหลด...";
+
+                const apiKey = kioskConfig?.imgbbApiKey;
+                if (!apiKey) { qrStatus.textContent = "ยังไม่ได้ใส่ API Key"; return; }
+                
+                const base64Data = stripCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+                const formData = new FormData(); formData.append("image", base64Data);
+
+                fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: formData })
+                    .then(res => res.json())
+                    .then(json => {
+                        if (json.success) {
+                            new QRCode(qrContainer, { text: json.data.url, width: 140, height: 140 });
+                            qrStatus.textContent = "สแกนเพื่อรับรูป";
+                            addDoc(collection(db, "photos"), { url: json.data.url, createdAt: serverTimestamp() }).catch(e=>console.log(e));
+                        } else qrStatus.textContent = "อัปโหลดล้มเหลว";
+                    }).catch(err => { qrStatus.textContent = "เกิดข้อผิดพลาด"; });
+            }
+
+            let printCopies = 1;
+            const printCopiesElem = document.getElementById('print-copies-count');
+
+            document.getElementById('qty-minus').addEventListener('click', () => {
+                if (printCopies > 1) { printCopies--; printCopiesElem.textContent = printCopies; playBeep(400, 0.05); }
+            });
+
+            document.getElementById('qty-plus').addEventListener('click', () => {
+                if (printCopies < 6) { printCopies++; printCopiesElem.textContent = printCopies; playBeep(600, 0.05); }
+            });
+
+            document.getElementById('download-btn').addEventListener('click', () => { const a = document.createElement('a'); a.download = `SNAP-${Date.now()}.jpg`; a.href = document.getElementById('strip-canvas').toDataURL('image/jpeg', 1.0); a.click(); });
+            
+            document.getElementById('print-btn').addEventListener('click', async () => {
+                const btn = document.getElementById('print-btn');
+                btn.disabled = true; const originalText = btn.textContent; btn.textContent = `กำลังสั่งพิมพ์ (${printCopies} ใบ)...`;
+                for (let i = 0; i < printCopies; i++) { window.print(); await new Promise(resolve => setTimeout(resolve, 800)); }
+                btn.disabled = false; btn.textContent = originalText;
+            });
+
+            document.getElementById('retake-btn').addEventListener('click', () => { 
+                document.getElementById('result-overlay').classList.remove('active'); 
+                document.getElementById('manual-start-btn').style.display = 'block';
+                document.getElementById('auto-shoot-msg').style.display = 'none';
+                state.isShooting = false;
+            });
+            
+            document.getElementById('home-btn').addEventListener('click', () => { switchScreen(1); });
+        });
+    </script>
+</body>
+</html>

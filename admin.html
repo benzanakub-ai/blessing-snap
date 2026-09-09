@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BLESSING SNAP - Admin Control</title>
+  
+  <!-- 🌟 เพิ่มไลบรารีสำหรับทำลากวาง (Drag and Drop) -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <style>
+    .gallery-card {
+      display: flex;
+      flex-direction: column;
+      height: 260px;
+    }
+    .gallery-img-box {
+      flex: 1;
+      background-color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .gallery-img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      position: absolute;
+    }
+    /* คลาสสำหรับเอฟเฟกต์ตอนลาก Drag & Drop */
+    .drag-over {
+      border-color: #0ea5e9 !important; /* sky-500 */
+      transform: scale(1.02);
+    }
+  </style>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { 
+      getFirestore, doc, getDoc, setDoc, collection, query, orderBy, onSnapshot, writeBatch, where 
+    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA57qyFTexeNyRMTTLUJMNC5Bm24L_K0io",
+      authDomain: "blessing-snap.firebaseapp.com",
+      projectId: "blessing-snap",
+      storageBucket: "blessing-snap.firebasestorage.app",
+      messagingSenderId: "324842012527",
+      appId: "1:324842012527:web:96a235fbf494d39ce9f29a",
+      measurementId: "G-8H8D35R54J"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const configDocRef = doc(db, "config", "settings");
+
+    const DEFAULT_PIN = "8888";
+    // 🌟 1. เพิ่ม ads: [] เข้าไปในโครงสร้างเริ่มต้น
+    let currentSettings = { imgbbApiKey: "", adVideoUrl: "", themes: [], ads: [] };
+    
+    let currentPhotos = []; 
+    let selectedPhotoIds = new Set(); 
+    let currentSortOrder = "desc"; 
+    let selectedDate = ""; 
+    let filterMode = "all"; 
+    let unsubscribeGallery = null; 
+    let draggedThemeIndex = null; // เก็บ Index ตัวที่กำลังถูกลาก
+
+    const authSection = document.getElementById('auth-section');
+    const dashboardSection = document.getElementById('dashboard-section');
+    const pinInput = document.getElementById('pin-input');
+    const pinError = document.getElementById('pin-error');
+
+    if (sessionStorage.getItem('blessing_admin_auth') === 'true') { showDashboard(); }
+
+    window.verifyPin = () => {
+      if (pinInput.value.trim() === DEFAULT_PIN) {
+        sessionStorage.setItem('blessing_admin_auth', 'true');
+        pinError.classList.add('hidden');
+        showDashboard();
+      } else {
+        pinError.textContent = "❌ รหัส PIN ไม่ถูกต้อง";
+        pinError.classList.remove('hidden');
+        pinInput.value = ''; pinInput.focus();
+      }
+    };
+
+    window.logout = () => {
+      sessionStorage.removeItem('blessing_admin_auth');
+      dashboardSection.classList.add('hidden');
+      authSection.classList.remove('hidden');
+      pinInput.value = '';
+      if(unsubscribeGallery) unsubscribeGallery();
+    };
+
+    function showDashboard() {
+      authSection.classList.add('hidden');
+      dashboardSection.classList.remove('hidden');
+      loadConfig();
+      listenToGallery();
+    }
+
+    async function loadConfig() {
+      try {
+        const docSnap = await getDoc(configDocRef);
+        if (docSnap.exists()) {
+          currentSettings = docSnap.data();
+          document.getElementById('imgbbApiKey').value = currentSettings.imgbbApiKey || "";
+          document.getElementById('adVideoUrl').value = currentSettings.adVideoUrl || "";
+          
+          if (!currentSettings.themes) currentSettings.themes = [];
+          if (!currentSettings.ads) currentSettings.ads = []; // 🌟 ป้องกันกรณีไม่มีฟิลด์โฆษณาเก่า
+          
+          // แปลงข้อมูลเก่าที่เป็นแค่ลิงก์ (String) ให้กลายเป็น Object {name, url}
+          currentSettings.themes = currentSettings.themes.map((theme, index) => {
+            return typeof theme === 'string' ? { url: theme, name: `Template ${index + 1}` } : theme;
+          });
+
+          renderThemes();
+          if(window.renderAdList) window.renderAdList(currentSettings.ads); // 🌟 สั่งวาดรูปโฆษณา
+        }
+      } catch (err) { console.error(err); }
+    }
+
+    window.saveBasicConfig = async () => {
+      const btn = document.getElementById('save-basic-btn');
+      const status = document.getElementById('basic-status');
+      btn.disabled = true; status.textContent = "กำลังบันทึก...";
+      currentSettings.imgbbApiKey = document.getElementById('imgbbApiKey').value.trim();
+      currentSettings.adVideoUrl = document.getElementById('adVideoUrl').value.trim();
+      try {
+        await setDoc(configDocRef, currentSettings, { merge: true });
+        status.textContent = "✓ บันทึกเรียบร้อย"; status.className = "text-green-400 text-xs mt-2";
+      } catch (err) { status.textContent = "❌ " + err.message; status.className = "text-red-400 text-xs mt-2"; }
+      setTimeout(() => status.textContent = "", 3000);
+      btn.disabled = false;
+    };
+
+    // --- ระบบอัปโหลดและจัดการเทมเพลต (ปรับปรุงใหม่) ---
+    window.uploadTheme = async () => {
+      const apiKey = currentSettings.imgbbApiKey || document.getElementById('imgbbApiKey').value.trim();
+      if (!apiKey) return alert("กรุณาบันทึก ImgBB API Key ก่อนครับ");
+      const fileInput = document.getElementById('themeFileInput');
+      if (!fileInput.files[0]) return alert("กรุณาเลือกไฟล์ภาพ .png ก่อนครับ");
+
+      const themeNameInput = document.getElementById('themeNameInput');
+      const themeName = themeNameInput.value.trim() || `Template ${currentSettings.themes.length + 1}`;
+
+      const status = document.getElementById('upload-status');
+      status.textContent = "กำลังอัปโหลด..."; status.className = "text-yellow-400 text-xs mt-2";
+      const formData = new FormData(); formData.append("image", fileInput.files[0]);
+
+      try {
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: formData });
+        const data = await res.json();
+        if (data.success) {
+          // เก็บเป็น Object { url, name }
+          currentSettings.themes.push({ url: data.data.url, name: themeName });
+          await setDoc(configDocRef, currentSettings, { merge: true });
+          status.textContent = "✓ อัปโหลดสำเร็จ!"; status.className = "text-green-400 text-xs mt-2";
+          fileInput.value = ""; 
+          themeNameInput.value = ""; // เคลียร์ชื่อ
+          renderThemes();
+        } else {
+          status.textContent = "❌ " + data.error.message; status.className = "text-red-400 text-xs mt-2";
+        }
+      } catch (err) { status.textContent = "❌ ผิดพลาดในการอัปโหลด"; status.className = "text-red-400 text-xs mt-2"; }
+      setTimeout(() => status.textContent = "", 4000);
+    };
+
+    // อัปเดตชื่อเมื่อพิมพ์แก้
+    window.updateThemeName = async (index, newName) => {
+      if (newName.trim() === "") newName = `Template ${index + 1}`;
+      currentSettings.themes[index].name = newName;
+      await setDoc(configDocRef, currentSettings, { merge: true });
+    };
+
+    function renderThemes() {
+      const list = document.getElementById('themeList');
+      list.innerHTML = "";
+      currentSettings.themes.forEach((theme, index) => {
+        list.innerHTML += `
+          <div class="bg-zinc-800 p-2 rounded-lg border border-zinc-700 flex flex-col justify-between cursor-move theme-item transition-transform"
+               draggable="true" 
+               data-index="${index}"
+               ondragstart="handleDragStart(event)" 
+               ondragover="handleDragOver(event)" 
+               ondrop="handleDrop(event)"
+               ondragenter="handleDragEnter(event)"
+               ondragleave="handleDragLeave(event)">
+            
+            <div class="flex items-center gap-1.5 mb-2 px-1">
+               <i class="fa-solid fa-grip-vertical text-zinc-500 text-xs"></i>
+               <input type="text" value="${theme.name}" onchange="updateThemeName(${index}, this.value)" class="w-full bg-transparent text-xs text-sky-400 font-bold outline-none border-b border-transparent focus:border-sky-500 transition cursor-text px-1" title="พิมพ์เพื่อเปลี่ยนชื่อ">
+            </div>
+
+            <div class="w-full bg-black flex items-center justify-center p-1 rounded mb-2 pointer-events-none" style="height: 120px;">
+              <img src="${theme.url}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+            </div>
+            
+            <button onclick="deleteTheme(${index})" class="w-full bg-red-900/40 hover:bg-red-800 text-red-400 hover:text-white py-1.5 rounded text-xs font-bold transition border border-red-900 z-10 relative">
+              <i class="fa-solid fa-trash"></i> ลบธีม
+            </button>
+          </div>`;
+      });
+    }
+
+    // --- Drag & Drop Functions สำหรับเรียงลำดับเทมเพลต ---
+    window.handleDragStart = (e) => {
+      draggedThemeIndex = parseInt(e.currentTarget.getAttribute('data-index'));
+      e.currentTarget.style.opacity = '0.4'; // ทำให้โปร่งใสตอนลาก
+      e.dataTransfer.effectAllowed = 'move';
+    };
+
+    window.handleDragOver = (e) => {
+      e.preventDefault(); // อนุญาตให้ Drop ได้
+      e.dataTransfer.dropEffect = 'move';
+    };
+
+    window.handleDragEnter = (e) => {
+      e.preventDefault();
+      const target = e.currentTarget;
+      if (target.classList.contains('theme-item')) {
+        target.classList.add('drag-over');
+      }
+    };
+    
+    window.handleDragLeave = (e) => {
+      const target = e.currentTarget;
+      if (target.classList.contains('theme-item')) {
+        target.classList.remove('drag-over');
+      }
+    };
+
+    window.handleDrop = async (e) => {
+      e.stopPropagation();
+      const target = e.currentTarget;
+      target.classList.remove('drag-over');
+      
+      const dropIndex = parseInt(target.getAttribute('data-index'));
+      
+      if (draggedThemeIndex !== null && draggedThemeIndex !== dropIndex) {
+        // สลับตำแหน่งใน Array
+        const draggedItem = currentSettings.themes[draggedThemeIndex];
+        currentSettings.themes.splice(draggedThemeIndex, 1); // ลบตัวเดิม
+        currentSettings.themes.splice(dropIndex, 0, draggedItem); // แทรกตัวใหม่
+        
+        renderThemes(); // อัปเดตหน้าจอทันที
+        
+        // บันทึกการเรียงลำดับใหม่ลง Firestore
+        await setDoc(configDocRef, currentSettings, { merge: true });
+      }
+      
+      draggedThemeIndex = null;
+      return false;
+    };
+    
+    // คืนค่า Opacity กลับมาตอนปล่อยเมาส์
+    document.addEventListener('dragend', (e) => {
+      document.querySelectorAll('.theme-item').forEach(c => {
+        c.style.opacity = '1';
+        c.classList.remove('drag-over');
+      });
+    });
+
+    window.deleteTheme = async (index) => {
+      if (confirm("ต้องการลบธีมนี้ใช่หรือไม่?")) {
+        currentSettings.themes.splice(index, 1);
+        await setDoc(configDocRef, currentSettings, { merge: true });
+        renderThemes();
+      }
+    };
+
+    // --- ระบบ Gallery ---
+    window.changeSortOrder = () => {
+      currentSortOrder = document.getElementById('sortOrder').value;
+      listenToGallery();
+    };
+
+    window.toggleDateMode = () => {
+      filterMode = document.getElementById('dateMode').value;
+      const dateInput = document.getElementById('dateFilter');
+      if (filterMode === 'specific') {
+        dateInput.classList.remove('hidden');
+        if(dateInput.value) { selectedDate = dateInput.value; listenToGallery(); }
+      } else {
+        dateInput.classList.add('hidden');
+        selectedDate = ''; listenToGallery();
+      }
+    };
+
+    window.applyDateFilter = () => {
+      if (filterMode === 'specific') {
+        selectedDate = document.getElementById('dateFilter').value;
+        if (selectedDate) listenToGallery();
+      }
+    };
+
+    function listenToGallery() {
+      if (unsubscribeGallery) unsubscribeGallery(); 
+      selectedPhotoIds.clear(); 
+      
+      let q;
+      if (filterMode === 'specific' && selectedDate) {
+        const startOfDay = new Date(selectedDate); startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(selectedDate); endOfDay.setHours(23, 59, 59, 999);
+        q = query(collection(db, "photos"), where("createdAt", ">=", startOfDay), where("createdAt", "<=", endOfDay), orderBy("createdAt", currentSortOrder));
+      } else {
+        q = query(collection(db, "photos"), orderBy("createdAt", currentSortOrder));
+      }
+      
+      unsubscribeGallery = onSnapshot(q, (snapshot) => {
+        currentPhotos = [];
+        snapshot.forEach((docSnap) => { currentPhotos.push({ id: docSnap.id, ...docSnap.data() }); });
+        
+        document.getElementById('photo-count').textContent = `${currentPhotos.length} รูป`;
+        renderGallery(); updateToolbarStatus();
+      }, (err) => { console.error("Gallery Error:", err); });
+    }
+
+    function renderGallery() {
+      const galleryGridEl = document.getElementById('gallery-grid');
+      galleryGridEl.innerHTML = '';
+      
+      if (currentPhotos.length === 0) {
+        const msg = (filterMode === 'specific' && selectedDate) ? `ไม่พบรูปภาพในวันที่เลือก` : `ยังไม่มีรูปภาพของลูกค้า`;
+        galleryGridEl.innerHTML = `<div class="col-span-full text-center text-zinc-500 py-8 text-sm">${msg}</div>`;
+        return;
+      }
+
+      currentPhotos.forEach((photo) => {
+        const isSelected = selectedPhotoIds.has(photo.id);
+        const card = document.createElement('div');
+        
+        card.className = `gallery-card group relative bg-zinc-800 border-2 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 
+                          ${isSelected ? 'border-sky-500 ring-2 ring-sky-500/50' : 'border-zinc-700 hover:border-zinc-500'}`;
+        
+        let timeString = "ไม่ระบุเวลา"; let dateString = "";
+        if (photo.createdAt) {
+          const dateObj = photo.createdAt.toDate ? photo.createdAt.toDate() : new Date(photo.createdAt);
+          dateString = dateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+          timeString = dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute:'2-digit' });
+        }
+        const imgUrl = photo.url || photo.photoUrl;
+
+        card.innerHTML = `
+          <div class="absolute top-2 left-2 z-10 pointer-events-none">
+            <div class="w-5 h-5 rounded flex items-center justify-center border-2 shadow-sm ${isSelected ? 'bg-sky-500 border-sky-500 text-white' : 'bg-black/60 border-zinc-400 text-transparent'}">
+              <i class="fa-solid fa-check text-xs"></i>
+            </div>
+          </div>
+          
+          <div class="gallery-img-box pointer-events-none">
+            <img src="${imgUrl}" loading="lazy" onerror="this.src='https://placehold.co/400x400/111/333?text=No+Image'">
+          </div>
+          
+          <div class="p-2 flex items-center justify-between bg-zinc-900 border-t border-zinc-800 mt-auto relative z-20">
+            <span class="text-[10px] text-zinc-400 pointer-events-none">${dateString} <span class="text-zinc-600 px-1">|</span> <span class="text-sky-400 font-mono">${timeString}</span></span>
+            
+            <div class="flex items-center gap-1.5">
+               <button onclick="printSinglePhoto(event, '${imgUrl}')" title="พิมพ์รูปนี้" class="w-7 h-7 flex items-center justify-center bg-zinc-800 hover:bg-emerald-600 text-zinc-300 hover:text-white rounded border border-zinc-700 hover:border-emerald-500 transition">
+                 <i class="fa-solid fa-print text-[10px]"></i>
+               </button>
+               <button onclick="downloadSingleFile(event, '${imgUrl}', '${photo.id}')" title="ดาวน์โหลดเป็นไฟล์ภาพ" class="w-7 h-7 flex items-center justify-center bg-zinc-800 hover:bg-sky-600 text-zinc-300 hover:text-white rounded border border-zinc-700 hover:border-sky-500 transition">
+                 <i class="fa-solid fa-download text-[10px]"></i>
+               </button>
+            </div>
+          </div>
+        `;
+        
+        card.onclick = () => toggleSelectPhoto(photo.id);
+        galleryGridEl.appendChild(card);
+      });
+    }
+
+    window.downloadSingleFile = async (event, url, photoId) => {
+      event.stopPropagation();
+      const btn = event.currentTarget;
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-[10px]"></i>`;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(url, { mode: 'cors' });
+        const blob = await res.blob();
+        const ext = url.split('.').pop().split('?')[0] || 'jpg';
+        saveAs(blob, `BlessingSnap_${photoId.substring(0,5)}.${ext}`);
+      } catch (error) {
+        console.error("Download error:", error);
+        alert("ไม่สามารถดาวน์โหลดได้");
+      } finally {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+      }
+    };
+
+    window.printSinglePhoto = (event, url) => {
+      event.stopPropagation();
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        const content = '<!DOCTYPE html>\n<html>\n<head>\n' +
+          '<title>Print Photo</title>\n' +
+          '<style>@page { margin: 0; } body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #fff; } img { max-width: 100%; max-height: 100%; object-fit: contain; }</style>\n' +
+          '</head>\n<body' + '>\n' +
+          '<img src="' + url + '" onload="window.print(); window.close();" />\n' +
+          '</body' + '>\n</html' + '>';
+        printWindow.document.write(content);
+        printWindow.document.close();
+      } else {
+        alert("เบราว์เซอร์ของคุณบล็อก Pop-up กรุณาอนุญาตเพื่อทำการพิมพ์");
+      }
+    };
+
+    window.toggleSelectPhoto = (id) => {
+      selectedPhotoIds.has(id) ? selectedPhotoIds.delete(id) : selectedPhotoIds.add(id);
+      renderGallery(); updateToolbarStatus();
+    };
+
+    window.toggleSelectAll = () => {
+      const selectAllBtn = document.getElementById('selectAllBtn');
+      if (selectedPhotoIds.size === currentPhotos.length && currentPhotos.length > 0) {
+        selectedPhotoIds.clear(); selectAllBtn.innerHTML = '<i class="fa-regular fa-square"></i> เลือกทั้งหมด';
+      } else {
+        currentPhotos.forEach(p => selectedPhotoIds.add(p.id)); selectAllBtn.innerHTML = '<i class="fa-solid fa-square-check"></i> ยกเลิกเลือกทั้งหมด';
+      }
+      renderGallery(); updateToolbarStatus();
+    };
+
+    function updateToolbarStatus() {
+      const count = selectedPhotoIds.size;
+      const downloadBtn = document.getElementById('bulkDownloadBtn');
+      const deleteBtn = document.getElementById('bulkDeleteBtn');
+      const countText = document.getElementById('selectedCountText');
+      const selectAllBtn = document.getElementById('selectAllBtn');
+
+      if (count > 0) {
+        countText.textContent = `(เลือกแล้ว ${count} รูป)`;
+        downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed'); deleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        downloadBtn.disabled = false; deleteBtn.disabled = false;
+      } else {
+        countText.textContent = "";
+        downloadBtn.classList.add('opacity-50', 'cursor-not-allowed'); deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        downloadBtn.disabled = true; deleteBtn.disabled = true;
+      }
+      if(count === currentPhotos.length && currentPhotos.length > 0) {
+         selectAllBtn.innerHTML = '<i class="fa-solid fa-square-check"></i> ยกเลิกเลือกทั้งหมด';
+      } else { selectAllBtn.innerHTML = '<i class="fa-regular fa-square"></i> เลือกทั้งหมด'; }
+    }
+
+    window.bulkDelete = async () => {
+      if (selectedPhotoIds.size === 0) return;
+      if (!confirm(`ยืนยันการลบรูปภาพที่เลือกจำนวน ${selectedPhotoIds.size} รูปใช่หรือไม่?\n(ข้อมูลจะถูกลบถาวร)`)) return;
+      const deleteBtn = document.getElementById('bulkDeleteBtn');
+      const originalText = deleteBtn.innerHTML;
+      deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> กำลังลบ...`;
+      deleteBtn.disabled = true;
+
+      try {
+        const batch = writeBatch(db);
+        selectedPhotoIds.forEach(id => { batch.delete(doc(db, "photos", id)); });
+        await batch.commit(); selectedPhotoIds.clear();
+      } catch (error) { alert("เกิดข้อผิดพลาดในการลบ: " + error.message); } 
+      finally { deleteBtn.innerHTML = originalText; updateToolbarStatus(); }
+    };
+
+    window.bulkDownload = async () => {
+      if (selectedPhotoIds.size === 0) return;
+      const downloadBtn = document.getElementById('bulkDownloadBtn');
+      const originalText = downloadBtn.innerHTML;
+      downloadBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> เตรียมไฟล์...`; downloadBtn.disabled = true;
+
+      try {
+        const zip = new JSZip(); const folder = zip.folder("BlessingSnap_Photos");
+        let fetchPromises = []; let counter = 1;
+        currentPhotos.forEach(photo => {
+          if (selectedPhotoIds.has(photo.id)) {
+            const url = photo.url || photo.photoUrl;
+            const promise = fetch(url, { mode: 'cors' }).then(res => res.blob()).then(blob => {
+                const ext = url.split('.').pop().split('?')[0] || 'jpg';
+                folder.file(`Photo_${counter}_${photo.id.substring(0,5)}.${ext}`, blob); counter++;
+            }).catch(err => console.error("Error:", err));
+            fetchPromises.push(promise);
+          }
+        });
+        await Promise.all(fetchPromises);
+        downloadBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> บีบอัด...`;
+        const content = await zip.generateAsync({ type: "blob" });
+        saveAs(content, `BlessingSnap_Selected_${new Date().getTime()}.zip`);
+      } catch (error) { alert("ไม่สามารถดาวน์โหลดไฟล์ ZIP ได้ กรุณาลองใหม่"); } 
+      finally { downloadBtn.innerHTML = originalText; downloadBtn.disabled = false; }
+    };
+
+    // ==========================================
+    // 🌟 2. ระบบจัดการโฆษณา (AD MANAGER) เพิ่มที่นี่ครับ
+    // ==========================================
+    let currentAds = []; 
+
+    window.renderAdList = (adsArray) => {
+        currentAds = adsArray || [];
+        const adList = document.getElementById('ad-sortable-list');
+        if (!adList) return;
+        
+        adList.innerHTML = '';
+        if (currentAds.length === 0) {
+            adList.innerHTML = '<div class="text-center text-zinc-600 py-4 text-xs border border-zinc-800 border-dashed rounded-lg">ยังไม่มีรูปโฆษณา</div>';
+            return;
+        }
+
+        currentAds.forEach((url, index) => {
+            const li = document.createElement('li');
+            li.className = "flex items-center justify-between bg-zinc-800 p-2 border border-zinc-700 rounded-md cursor-grab";
+            li.setAttribute('data-url', url);
+            li.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-grip-vertical text-zinc-500"></i>
+                    <img src="${url}" class="h-10 w-16 object-cover rounded bg-black">
+                </div>
+                <button onclick="window.deleteAd(${index})" class="text-xs bg-red-900/50 hover:bg-red-800 text-red-300 hover:text-white px-3 py-1.5 rounded transition">
+                    <i class="fa-solid fa-trash pointer-events-none"></i>
+                </button>
+            `;
+            adList.appendChild(li);
+        });
+
+        if (window.adSortableInstance) {
+            window.adSortableInstance.destroy();
+        }
+        window.adSortableInstance = new Sortable(adList, {
+            animation: 150,
+            ghostClass: 'opacity-50',
+            onEnd: function () {
+                const newOrder = [];
+                adList.querySelectorAll('li').forEach(li => newOrder.push(li.getAttribute('data-url')));
+                currentAds = newOrder;
+            }
+        });
+    };
+
+    window.deleteAd = (index) => {
+        if(confirm('ต้องการลบโฆษณานี้ใช่หรือไม่?')) {
+            currentAds.splice(index, 1);
+            window.renderAdList(currentAds);
+        }
+    };
+
+    window.uploadAd = async () => {
+        const apiKey = currentSettings.imgbbApiKey || document.getElementById('imgbbApiKey').value.trim();
+        if (!apiKey) return alert("กรุณาบันทึก ImgBB API Key ในช่อง SYSTEM CONFIG ก่อนครับ");
+        const fileInput = document.getElementById('ad-upload-input');
+        if (!fileInput.files[0]) return alert("กรุณาเลือกไฟล์ภาพโฆษณาก่อนครับ");
+
+        const status = document.getElementById('ad-upload-status');
+        const btn = document.getElementById('upload-ad-btn');
+        const originalBtnHTML = btn.innerHTML;
+        
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> กำลังอัปโหลด...`;
+        status.textContent = "";
+
+        const formData = new FormData(); 
+        formData.append("image", fileInput.files[0]);
+
+        try {
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: formData });
+            const data = await res.json();
+            if (data.success) {
+                currentAds.push(data.data.url);
+                window.renderAdList(currentAds);
+                fileInput.value = ""; 
+                status.textContent = "อัปโหลดสำเร็จ! อย่าลืมกดบันทึกนะครับ"; 
+                status.className = "text-green-400 text-xs mt-2 text-center";
+            } else {
+                status.textContent = "❌ " + data.error.message; 
+                status.className = "text-red-400 text-xs mt-2 text-center";
+            }
+        } catch (err) { 
+            status.textContent = "❌ ผิดพลาดในการอัปโหลด"; 
+            status.className = "text-red-400 text-xs mt-2 text-center"; 
+        }
+        setTimeout(() => status.textContent = "", 4000);
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHTML;
+    };
+
+    window.saveAds = async () => {
+        const btn = document.getElementById('save-ads-btn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true; 
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> กำลังบันทึก...`;
+
+        try {
+            currentSettings.ads = currentAds;
+            await setDoc(configDocRef, currentSettings, { merge: true });
+            alert('บันทึกลำดับโฆษณาเรียบร้อยแล้ว!');
+        } catch(e) {
+            console.error("Error saving ads:", e); 
+            alert('เกิดข้อผิดพลาดในการบันทึก');
+        } finally {
+            btn.disabled = false; 
+            btn.innerHTML = originalText;
+        }
+    };
+  </script>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen font-sans">
+
+  <!-- หน้า Auth -->
+  <section id="auth-section" class="flex flex-col items-center justify-center min-h-screen p-6">
+    <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl max-w-sm w-full text-center shadow-2xl">
+      <div class="inline-block bg-sky-500 text-black text-xs font-black px-2.5 py-0.5 rounded tracking-widest uppercase mb-4">BLESSING SNAP</div>
+      <h1 class="text-xl font-black tracking-wide uppercase mb-1">Admin Access</h1>
+      <p class="text-xs text-zinc-400 mb-6">กรอกรหัส PIN เพื่อเข้าสู่หน้าควบคุมตู้</p>
+      <form onsubmit="event.preventDefault(); verifyPin();" class="space-y-4">
+        <input type="password" id="pin-input" maxlength="8" placeholder="••••" autofocus class="w-full text-center tracking-[0.4em] text-2xl font-bold bg-zinc-950 border border-zinc-700 rounded-xl py-3 text-white outline-none focus:border-sky-500 transition">
+        <div id="pin-error" class="text-red-400 text-xs font-medium hidden"></div>
+        <button type="submit" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
+          <i class="fa-solid fa-lock-open"></i> เข้าสู่ระบบ
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- หน้า Dashboard -->
+  <section id="dashboard-section" class="hidden">
+    <header class="border-b border-zinc-800 bg-zinc-900/80 sticky top-0 backdrop-blur z-20">
+      <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="font-black text-lg tracking-widest uppercase text-sky-400">BLESSING SNAP</span>
+          <span class="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-1 rounded border border-zinc-700 uppercase font-mono">PIN AUTHENTICATED</span>
+        </div>
+        <button onclick="logout()" class="text-xs text-red-400 hover:text-red-300 font-bold border border-red-900/40 bg-red-950/20 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+          <i class="fa-solid fa-lock"></i> ล็อกหน้าจอ
+        </button>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- คอลัมน์ซ้าย: Config & Template -->
+      <div class="lg:col-span-1 space-y-6">
+        <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl space-y-4 shadow-lg">
+          <h2 class="font-bold text-sm tracking-wide flex items-center gap-2 border-b border-zinc-800 pb-2">
+            <i class="fa-solid fa-gear text-sky-400"></i> SYSTEM CONFIG
+          </h2>
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">ImgBB API Key</label>
+            <input type="text" id="imgbbApiKey" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-sm text-white outline-none focus:border-sky-500">
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Video Ad URL</label>
+            <input type="url" id="adVideoUrl" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-sm text-white outline-none focus:border-sky-500">
+          </div>
+          <button id="save-basic-btn" onclick="saveBasicConfig()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-lg transition text-sm">บันทึกการตั้งค่า</button>
+          <div id="basic-status" class="text-center"></div>
+        </div>
+
+        <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl space-y-4 shadow-lg">
+          <h2 class="font-bold text-sm tracking-wide flex items-center gap-2 border-b border-zinc-800 pb-2">
+            <i class="fa-solid fa-layer-group text-sky-400"></i> TEMPLATE MANAGER
+          </h2>
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">ตั้งชื่อเทมเพลต (ถ้ามี)</label>
+              <input type="text" id="themeNameInput" placeholder="เช่น Wedding 01" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-sm text-white outline-none focus:border-sky-500">
+            </div>
+            <div>
+              <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1 block">อัปโหลดกรอบใหม่ (.PNG)</label>
+              <input type="file" id="themeFileInput" accept="image/png" class="block w-full text-sm text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700 cursor-pointer border border-zinc-700 rounded-lg p-1 bg-zinc-950">
+              <button onclick="uploadTheme()" class="w-full mt-2 bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-2 rounded-lg transition text-sm">
+                <i class="fa-solid fa-cloud-arrow-up"></i> อัปโหลดเข้าตู้
+              </button>
+              <div id="upload-status" class="text-center"></div>
+            </div>
+          </div>
+          <div class="pt-2">
+            <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block mb-2">กรอบที่ใช้งานอยู่ (ลากสลับตำแหน่งได้)</label>
+            <div id="themeList" class="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto pr-1"></div>
+          </div>
+        </div>
+        
+        <!-- 🌟 3. กล่อง AD MANAGER -->
+        <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl space-y-4 shadow-lg">
+            <h2 class="font-bold text-sm tracking-wide flex items-center gap-2 border-b border-zinc-800 pb-2">
+                <i class="fa-solid fa-bullhorn text-sky-400"></i> AD MANAGER
+            </h2>
+            <div class="space-y-1">
+                <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1 block">อัปโหลดรูปโฆษณาใหม่ (.JPG, .PNG)</label>
+                <input type="file" id="ad-upload-input" accept="image/*" class="block w-full text-sm text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-white hover:file:bg-zinc-700 cursor-pointer border border-zinc-700 rounded-lg p-1 bg-zinc-950">
+                <button onclick="window.uploadAd()" id="upload-ad-btn" class="w-full mt-2 bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-2 rounded-lg transition text-sm">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> อัปโหลดรูปภาพ
+                </button>
+                <div id="ad-upload-status"></div>
+            </div>
+            
+            <div class="pt-2">
+                <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block mb-2">ลำดับโฆษณา (ลากขึ้นลงเพื่อสลับตำแหน่ง)</label>
+                <ul id="ad-sortable-list" class="list-none p-2 m-0 min-h-[60px] border border-dashed border-zinc-700 rounded-lg bg-zinc-950/50 space-y-2">
+                </ul>
+            </div>
+            
+            <button onclick="window.saveAds()" id="save-ads-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg transition text-sm flex items-center justify-center gap-2">
+                <i class="fa-solid fa-floppy-disk"></i> บันทึกลำดับโฆษณา
+            </button>
+        </div>
+
+      </div>
+
+      <!-- คอลัมน์ขวา: Gallery -->
+      <div class="lg:col-span-2">
+        <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl shadow-lg flex flex-col h-full max-h-[850px]">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 border-b border-zinc-800 pb-3 gap-3">
+            <h2 class="font-bold text-sm tracking-wide flex items-center gap-2">
+              <i class="fa-solid fa-camera-retro text-sky-400"></i> LIVE CLIENT GALLERY
+            </h2>
+            <div class="flex items-center gap-3">
+              <span class="text-[10px] text-green-400 flex items-center gap-1.5 font-medium uppercase tracking-wider">
+                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> Live Sync
+              </span>
+              <span id="photo-count" class="text-xs bg-zinc-800 text-zinc-300 border border-zinc-700 px-2 py-1 rounded-md font-mono">0 รูป</span>
+            </div>
+          </div>
+
+          <!-- Toolbar ใช้งาน -->
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-zinc-950 p-2.5 rounded-lg border border-zinc-800">
+            <div class="flex items-center gap-3">
+              <button id="selectAllBtn" onclick="toggleSelectAll()" class="text-xs font-semibold text-zinc-300 hover:text-white px-2 py-1 rounded bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 transition flex items-center gap-1.5">
+                <i class="fa-regular fa-square"></i> เลือกทั้งหมด
+              </button>
+              <span id="selectedCountText" class="text-xs font-bold text-sky-400"></span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded px-1 py-1">
+                <span class="text-zinc-400 text-xs pl-1"><i class="fa-regular fa-calendar-days"></i></span>
+                <select id="dateMode" onchange="toggleDateMode()" class="bg-transparent text-xs text-white outline-none cursor-pointer h-[22px]">
+                  <option value="all" selected>ดูทุกวัน (ทั้งหมด)</option>
+                  <option value="specific">เลือกบางวัน...</option>
+                </select>
+                <input type="date" id="dateFilter" onchange="applyDateFilter()" class="hidden bg-zinc-900 border-l border-zinc-700 text-xs text-sky-400 px-2 outline-none cursor-pointer h-[22px] ml-1">
+              </div>
+
+              <select id="sortOrder" onchange="changeSortOrder()" class="bg-zinc-800 border border-zinc-700 text-xs text-white rounded px-2 py-1 outline-none cursor-pointer h-[30px]">
+                <option value="desc">ใหม่สุดไปเก่า</option>
+                <option value="asc">เก่าสุดไปใหม่</option>
+              </select>
+
+              <div class="h-4 w-px bg-zinc-700 mx-1"></div>
+
+              <button id="bulkDownloadBtn" onclick="bulkDownload()" disabled class="opacity-50 cursor-not-allowed bg-sky-700 hover:bg-sky-600 text-white text-xs px-3 py-1.5 rounded flex items-center gap-1.5 transition font-medium h-[30px]">
+                <i class="fa-solid fa-file-zipper"></i> โหลดที่เลือก (.zip)
+              </button>
+              <button id="bulkDeleteBtn" onclick="bulkDelete()" disabled class="opacity-50 cursor-not-allowed bg-red-900/80 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded flex items-center gap-1.5 transition font-medium h-[30px]">
+                <i class="fa-solid fa-trash-can"></i> ลบที่เลือก
+              </button>
+            </div>
+          </div>
+
+          <!-- Gallery Grid -->
+          <div id="gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 overflow-y-auto pr-2 pb-4 flex-1 content-start">
+            <!-- ข้อมูลรูปภาพจะมาแสดงตรงนี้ -->
+          </div>
+          
+        </div>
+      </div>
+
+    </main>
+  </section>
+
+</body>
+</html>
