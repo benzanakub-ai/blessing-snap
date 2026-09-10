@@ -324,7 +324,7 @@
             let slideInterval;
             let currentAdIndex = 0;
             let isAdPlaying = false;
-            const IDLE_TIME_MS = 5 * 60 * 1000;
+            const IDLE_TIME_MS = 2 * 60 * 1000;
 
             function showAds() {
                 if (!kioskConfig.ads || kioskConfig.ads.length === 0) return;
@@ -681,7 +681,7 @@
 
             function shootSinglePhoto(index) {
                 updateGuideFrame(index); 
-                let count = 3; countdownOverlay.classList.add('active'); countdownNumber.textContent = count; playBeep();
+                let count = 5; countdownOverlay.classList.add('active'); countdownNumber.textContent = count; playBeep();
                 const timer = setInterval(() => {
                     count--;
                     if (count > 0) { countdownNumber.textContent = count; playBeep(); } 
@@ -701,7 +701,7 @@
             function shootNextPhoto(shotIndex) {
                 if (shotIndex > state.totalShots) { setTimeout(renderFinalPhotoStrip, 600); return; }
                 updateGuideFrame(shotIndex - 1); 
-                let count = 3; countdownOverlay.classList.add('active'); countdownNumber.textContent = count; playBeep();
+                let count = 5; countdownOverlay.classList.add('active'); countdownNumber.textContent = count; playBeep();
                 const timer = setInterval(() => {
                     count--;
                     if (count > 0) { countdownNumber.textContent = count; playBeep(); } 
