@@ -50,12 +50,10 @@
 
         #screen-3 { padding: 70px 20px 20px; background: #050505; }
         
-        /* 🌟 ขยายจอภาพให้เต็ม */
         .camera-workspace { display: flex; gap: 24px; width: 100%; max-width: 1400px; height: calc(100% - 90px); align-items: center; justify-content: center; }        
         .viewfinder-container { position: relative; flex: 1; aspect-ratio: 16 / 9; max-height: 80vh; background: #000; border-radius: 16px; overflow: hidden; display: flex; justify-content: center; align-items: center; }        
         video#webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); pointer-events: none; }        
         
-        /* 🌟 กล่องไกด์ไลน์ (Guide Frame) */
         .guide-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 3px dashed rgba(255, 255, 255, 0.85); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55); pointer-events: none; z-index: 20; transition: all 0.3s ease; }
 
         .filter-bw-classic { filter: grayscale(100%) contrast(140%) brightness(118%); }
@@ -159,10 +157,8 @@
         <div class="camera-workspace">
             <div class="viewfinder-container">
                 <video id="webcam" class="filter-color" autoplay playsinline muted></video>
-                <!-- 🌟 เพิ่มกล่องไกด์ไลน์ -->
                 <div id="camera-guide" class="guide-box" style="display: none;"></div>
-                
-                <div class="countdown-overlay" id="countdown-overlay"><div class="countdown-number" id="countdown-number">3</div></div>
+                <div class="countdown-overlay" id="countdown-overlay"><div class="countdown-number" id="countdown-number">5</div></div>
                 <div class="flash-screen" id="flash-screen"></div>
             </div>
             
@@ -308,7 +304,6 @@
                 }
             }
 
-            // 🌟 ผูกอีเวนต์คลิกหน้าจออย่างปลอดภัย
             const screen1 = document.getElementById('screen-1');
             if (screen1) {
                 screen1.addEventListener('click', () => { 
@@ -374,7 +369,6 @@
                 }
             }
 
-            // 🌟 ปรับระบบดักจับ Mousemove / Click ป้องกันการซ้อนทับกัน
             function resetIdleTimer(e) {
                 clearTimeout(idleTimeout);
                 
@@ -452,6 +446,8 @@
                 }
             }
 
+            // 🌟 แก้ไข: Local Area Pixel-Perfect Chroma Key + Mask Dilation 🌟
+            // ลบรอยเส้นจางๆ ตามขอบได้เนียนกริบ 100% โดยไม่ทำลายตัวหนังสือและโลโก้
             function analyzeAndProcessTemplate(imageSrc) {
                 return new Promise((resolve) => {
                     const img = new Image(); img.crossOrigin = "anonymous";
@@ -462,16 +458,23 @@
                         const ctx = canvas.getContext('2d', { willReadFrequently: true });
                         ctx.drawImage(img, 0, 0, width, height);
 
-                        const imgData = ctx.getImageData(0, 0, width, height).data;
+                        const imgDataObj = ctx.getImageData(0, 0, width, height);
+                        const imgData = imgDataObj.data;
+                        
+                        const overlayDataObj = new ImageData(new Uint8ClampedArray(imgData), width, height);
+                        const overlayData = overlayDataObj.data;
+
                         const bounds = CHROMA_TARGETS.map(t => ({ 
-                            id: t.id, minX: width, maxX: 0, minY: height, maxY: 0, count: 0 
+                            id: t.id, target: t, minX: width, maxX: 0, minY: height, maxY: 0, count: 0 
                         }));
 
+                        // 1. ค้นหากรอบ Bounding Box หลัก (จำกัดความแม่นยำสูง เพื่อไม่ให้ลามไปที่อื่น)
                         for (let y = 0; y < height; y++) {
                             for (let x = 0; x < width; x++) {
                                 const idx = (y * width + x) * 4;
                                 const r = imgData[idx], g = imgData[idx+1], b = imgData[idx+2], a = imgData[idx+3];
                                 if (a < 100) continue; 
+                                
                                 for (let i = 0; i < CHROMA_TARGETS.length; i++) {
                                     const t = CHROMA_TARGETS[i];
                                     const dist = Math.sqrt((r-t.r)**2 + (g-t.g)**2 + (b-t.b)**2);
@@ -488,14 +491,19 @@
                         }
 
                         const frames = [];
-                        const bleed = 3; // 🌟 ขยายกรอบออก 3 pixel เพื่อลบขอบสีที่หลงเหลือ
+                        const bleed = 6; // เผื่อระยะซ่อนรูปภาพเข้าไปใต้ขอบ
+                        
+                        // สร้าง Mask ชั่วคราว เพื่อจดจำตำแหน่งสีที่ต้องเจาะ
+                        const holeMask = new Uint8Array(width * height);
+
                         bounds.forEach(b => {
                             const w = b.maxX - b.minX + 1;
                             const h = b.maxY - b.minY + 1;
                             const area = w * h;
+                            
                             if (b.count > 20000 && w > 100 && h > 100) { 
                                 const fillRatio = b.count / area;
-                                if (fillRatio > 0.5) {
+                                if (fillRatio > 0.4) { 
                                     frames.push({ 
                                         id: b.id, 
                                         x: b.minX - bleed, 
@@ -503,6 +511,48 @@
                                         w: w + (bleed * 2), 
                                         h: h + (bleed * 2) 
                                     });
+
+                                    // จำกัดเขตการกวาดล้างเฉพาะแค่รอบๆ กรอบรูปเท่านั้น (ตัวอักษรด้านบนรอด 100%)
+                                    const searchPadding = 10;
+                                    const startX = Math.max(0, b.minX - searchPadding);
+                                    const endX = Math.min(width, b.maxX + searchPadding);
+                                    const startY = Math.max(0, b.minY - searchPadding);
+                                    const endY = Math.min(height, b.maxY + searchPadding);
+
+                                    // Step 1: สแกนหาสีเป้าหมายเพื่อสร้าง "หลุมแกนกลาง"
+                                    for (let y = startY; y <= endY; y++) {
+                                        for (let x = startX; x <= endX; x++) {
+                                            const idx = (y * width + x) * 4;
+                                            const r = imgData[idx], g = imgData[idx+1], b_color = imgData[idx+2];
+                                            const t = b.target;
+                                            const dist = Math.sqrt((r-t.r)**2 + (g-t.g)**2 + (b_color-t.b)**2);
+                                            
+                                            // จับเฉพาะสีที่ใกล้เคียงกับสีเฟรมมากๆ (หลีกเลี่ยงการจับสีพื้นหลัง)
+                                            if (dist < 90) {
+                                                holeMask[y * width + x] = 1; 
+                                            }
+                                        }
+                                    }
+
+                                    // Step 2: สั่งระเบิดขอบเขตหลุมให้ขยายออกไปอีก 4 พิกเซล
+                                    // กระบวนการนี้จะกวาดล้าง "รอยเส้นบางๆ ลูกผสม" ออกไปได้เกลี้ยงเกลา
+                                    const erodeRadius = 4;
+                                    for (let y = startY; y <= endY; y++) {
+                                        for (let x = startX; x <= endX; x++) {
+                                            if (holeMask[y * width + x] === 1) {
+                                                for(let dy = -erodeRadius; dy <= erodeRadius; dy++) {
+                                                    for(let dx = -erodeRadius; dx <= erodeRadius; dx++) {
+                                                        const ny = y + dy;
+                                                        const nx = x + dx;
+                                                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                                                            const targetIdx = (ny * width + nx) * 4;
+                                                            overlayData[targetIdx + 3] = 0; // ลบล้างให้โปร่งใสสนิท
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }); 
@@ -511,10 +561,8 @@
                         const overlayCanvas = document.createElement('canvas');
                         overlayCanvas.width = width; overlayCanvas.height = height;
                         const overlayCtx = overlayCanvas.getContext('2d');
-                        overlayCtx.drawImage(img, 0, 0, width, height);
-                        frames.forEach(f => {
-                            overlayCtx.clearRect(f.x, f.y, f.w, f.h);
-                        });
+                        overlayCtx.putImageData(overlayDataObj, 0, 0);
+
                         resolve({ layout: frames, overlayCanvas: overlayCanvas });
                     };
                     img.onerror = () => resolve({ layout: [], overlayCanvas: null });
@@ -632,7 +680,6 @@
                 startShootingSequence();
             });
 
-            // 🌟 ฟังก์ชันคำนวณและอัปเดตขนาดไกด์ไลน์ (แบบป้องกัน Error 100%)
             function updateGuideFrame(frameIndex) {
                 try {
                     const guide = document.getElementById('camera-guide');
@@ -681,7 +728,8 @@
 
             function shootSinglePhoto(index) {
                 updateGuideFrame(index); 
-                let count = 5; countdownOverlay.classList.add('active'); countdownNumber.textContent = count; playBeep();
+                let count = 5; 
+                countdownOverlay.classList.add('active'); countdownNumber.textContent = count; playBeep();
                 const timer = setInterval(() => {
                     count--;
                     if (count > 0) { countdownNumber.textContent = count; playBeep(); } 
@@ -701,7 +749,8 @@
             function shootNextPhoto(shotIndex) {
                 if (shotIndex > state.totalShots) { setTimeout(renderFinalPhotoStrip, 600); return; }
                 updateGuideFrame(shotIndex - 1); 
-                let count = 5; countdownOverlay.classList.add('active'); countdownNumber.textContent = count; playBeep();
+                let count = 5; 
+                countdownOverlay.classList.add('active'); countdownNumber.textContent = count; playBeep();
                 const timer = setInterval(() => {
                     count--;
                     if (count > 0) { countdownNumber.textContent = count; playBeep(); } 
