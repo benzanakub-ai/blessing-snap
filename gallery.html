@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BLESSING SNAP - Gallery Station</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        :root { --bg-color: #080808; --surface-color: #121212; --surface-hover: #1e1e1e; --border-color: #2a2a2a; --accent-white: #ffffff; --text-primary: #f5f5f5; --text-muted: #888888; }
+        
+        body, html { width: 100%; height: 100%; background-color: var(--bg-color); color: var(--text-primary); overflow: hidden; }
+        
+        /* แถบด้านบน */
+        header { position: sticky; top: 0; background: rgba(8, 8, 8, 0.85); backdrop-filter: blur(10px); z-index: 50; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .brand-header { display: flex; align-items: center; gap: 8px; letter-spacing: 4px; font-size: 1.2rem; font-weight: 900; color: var(--accent-white); text-transform: uppercase; }
+        .brand-badge { background: var(--accent-white); color: #000; padding: 2px 6px; font-size: 0.7rem; border-radius: 3px; font-weight: 900; }
+        .live-indicator { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: bold; color: #4ade80; }
+        .pulse { width: 10px; height: 10px; background: #4ade80; border-radius: 50%; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        /* พื้นที่แสดงรูปภาพ */
+        .gallery-container { padding: 30px; height: calc(100vh - 70px); overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; align-content: start; }
+        .gallery-container::-webkit-scrollbar { width: 8px; }
+        .gallery-container::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        
+        .photo-card { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; aspect-ratio: 2/3; display: flex; align-items: center; justify-content: center; }
+        .photo-card:hover, .photo-card:active { transform: translateY(-4px) scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.5); border-color: #555; }
+        .photo-img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-time { position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); padding: 20px 12px 10px; font-size: 0.75rem; color: #ccc; text-align: right; pointer-events: none; }
+
+        /* หน้าต่าง Modal แบบป๊อปอัป */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s ease; backdrop-filter: blur(8px); }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 20px; width: 90%; max-width: 900px; max-height: 90vh; display: flex; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        
+        .modal-image-col { flex: 1.5; background: #000; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .modal-image-col img { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; }
+        
+        .modal-action-col { flex: 1; padding: 40px 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #151515; position: relative; }
+        .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: #888; font-size: 2rem; cursor: pointer; transition: 0.2s; }
+        .close-btn:hover { color: #fff; transform: scale(1.1); }
+        
+        .qr-wrapper { background: #fff; padding: 20px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        #modal-qrcode { width: 180px; height: 180px; }
+        .qr-text { color: #000; font-size: 1rem; font-weight: 800; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .btn-share { background: #0a84ff; color: white; border: none; padding: 18px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 40px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; width: 100%; justify-content: center; margin-top: 10px; }
+        .btn-share:hover, .btn-share:active { background: #006ee6; transform: scale(1.05); }
+
+        #empty-state { width: 100%; grid-column: 1 / -1; text-align: center; padding: 100px 20px; color: #666; font-size: 1.2rem; }
+        
+        /* รองรับจอแนวตั้ง */
+        @media (max-width: 768px) {
+            .modal-content { flex-direction: column; overflow-y: auto; }
+            .modal-image-col { padding: 10px; }
+            .modal-image-col img { max-height: 50vh; }
+            .modal-action-col { padding: 30px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-header">BLESSING SNAP <span class="brand-badge">GALLERY</span></div>
+        <div class="live-indicator"><div class="pulse"></div> LIVE UPDATE</div>
+    </header>
+
+    <div class="gallery-container" id="gallery-container">
+        <div id="empty-state">กำลังโหลดรูปภาพ...</div>
+    </div>
+
+    <!-- หน้าต่าง Modal เวลาจิ้มรูป -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-image-col">
+                <img id="modal-img" src="" alt="Photobooth Snap">
+            </div>
+            <div class="modal-action-col">
+                <button class="close-btn" id="close-modal">&times;</button>
+                <div class="qr-wrapper">
+                    <div id="modal-qrcode"></div>
+                    <div class="qr-text">สแกนเพื่อโหลดรูป</div>
+                </div>
+                
+                <button class="btn-share" id="share-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                    แชร์ (AirDrop / LINE)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, limit } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA57qyFTexeNyRMTTLUJMNC5Bm24L_K0io",
+            authDomain: "blessing-snap.firebaseapp.com",
+            projectId: "blessing-snap",
+            storageBucket: "blessing-snap.firebasestorage.app",
+            messagingSenderId: "324842012527",
+            appId: "1:324842012527:web:96a235fbf494d39ce9f29a",
+            measurementId: "G-8H8D35R54J"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const galleryContainer = document.getElementById('gallery-container');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalImg = document.getElementById('modal-img');
+        const qrContainer = document.getElementById('modal-qrcode');
+        const closeModalBtn = document.getElementById('close-modal');
+        const shareBtn = document.getElementById('share-btn');
+        let currentPhotoUrl = "";
+
+        // ฟังก์ชันแปลงเวลา
+        function formatTime(timestamp) {
+            if (!timestamp) return "";
+            const date = timestamp.toDate();
+            return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // ดึงข้อมูลรูป 100 ใบรูปล่าสุดแบบ Real-time
+        const q = query(collection(db, "photos"), orderBy("createdAt", "desc"), limit(100));
+        
+        onSnapshot(q, (snapshot) => {
+            if (snapshot.empty) {
+                galleryContainer.innerHTML = '<div id="empty-state">ยังไม่มีรูปภาพในระบบ ถ่ายรูปที่ตู้หลักเพื่อเริ่มต้น!</div>';
+                return;
+            }
+
+            galleryContainer.innerHTML = '';
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.url) {
+                    const card = document.createElement('div');
+                    card.className = 'photo-card';
+                    card.innerHTML = `
+                        <img class="photo-img" src="${data.url}" loading="lazy">
+                        <div class="photo-time">${formatTime(data.createdAt)}</div>
+                    `;
+                    
+                    // เมื่อกดที่รูปภาพ
+                    card.addEventListener('click', () => {
+                        currentPhotoUrl = data.url;
+                        modalImg.src = data.url;
+                        
+                        // สร้าง QR Code ใหม่
+                        qrContainer.innerHTML = '';
+                        new QRCode(qrContainer, { text: data.url, width: 180, height: 180 });
+                        
+                        // แสดง Modal
+                        modalOverlay.classList.add('active');
+                    });
+                    
+                    galleryContainer.appendChild(card);
+                }
+            });
+        });
+
+        // ฟังก์ชันแชร์ (ทำงานได้ดีบน iPad/iPhone/Safari)
+        shareBtn.addEventListener('click', async () => {
+            if (!currentPhotoUrl) return;
+
+            // ตรวจสอบว่าเบราว์เซอร์รองรับระบบแชร์ (Web Share API) หรือไม่
+            if (navigator.share) {
+                try {
+                    // ลองส่งเป็นไฟล์ภาพไปเลย (เพื่อให้ AirDrop ส่งรูปได้ตรงๆ ไม่ใช่ส่งแค่ลิงก์)
+                    const response = await fetch(currentPhotoUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'blessing-snap.jpg', { type: blob.type });
+
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: 'My Blessing Snap',
+                        });
+                    } else {
+                        // ถ้าระบบไม่อนุญาตให้ส่งไฟล์ ให้ส่งเป็นลิงก์แทน
+                        await navigator.share({
+                            title: 'My Blessing Snap',
+                            url: currentPhotoUrl
+                        });
+                    }
+                } catch (error) {
+                    console.log("เกิดข้อผิดพลาด หรือลูกค้ากดยกเลิก:", error);
+                    // Fallback กรณีติด CORS จากเซิร์ฟเวอร์รูปภาพ ให้แชร์ลิงก์แทน
+                    try {
+                        await navigator.share({ title: 'My Blessing Snap', url: currentPhotoUrl });
+                    } catch (e) { console.log(e); }
+                }
+            } else {
+                alert('เบราว์เซอร์นี้ไม่รองรับระบบแชร์โดยตรง กรุณาใช้กล้องแสกน QR Code ครับ');
+            }
+        });
+
+        // ปิด Modal
+        closeModalBtn.addEventListener('click', () => modalOverlay.classList.remove('active'));
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+        });
+    </script>
+</body>
+</html>
