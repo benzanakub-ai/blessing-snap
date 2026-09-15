@@ -20,24 +20,25 @@
         .pulse { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; animation: blink 1.5s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        /* 🌟 ระบบ Grid ปกติ เว้นระยะห่างชัดเจน ไม่ซ้อนทับ มองเห็นหน้าคนครบทุกใบ */
+        /* 🌟 พื้นที่แสดงรูปภาพ */
         .gallery-container { 
-            padding: 30px; 
+            padding: 50px 30px 80px; /* เผื่อพื้นที่ด้านล่างไว้เยอะหน่อยให้เลื่อนดูใบสุดท้ายได้สบายๆ */
             height: calc(100vh - 65px); 
             overflow-y: auto; 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
-            gap: 25px; 
+            column-gap: 24px; 
+            row-gap: 0px; 
             align-content: start; 
-            justify-items: center;
+            scroll-behavior: smooth; /* เลื่อนจอแบบนุ่มนวล */
         }
         .gallery-container::-webkit-scrollbar { width: 6px; }
         .gallery-container::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
         
-        /* การ์ดรูปภาพ (สัดส่วนเป๊ะตามกระดาษ 1240x1754) */
+        /* 🌟 ปรับให้การ์ดมุดซ้อนทับกัน และคลิกได้ง่ายๆ */
         .photo-card { 
             width: 100%;
-            max-width: 270px; 
+            max-width: 280px; 
             background: var(--surface-color); 
             border-radius: 12px; 
             overflow: hidden; 
@@ -48,32 +49,39 @@
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            box-shadow: 0 6px 20px rgba(0,0,0,0.5); 
+            margin-top: -50px; /* ซ้อนทับกันแบบน้ำตก */
+            box-shadow: 0 -8px 20px rgba(0,0,0,0.5); /* เปลี่ยนทิศทางเงาให้สมจริงเวลาซ้อนจากล่างขึ้นบน */
             border: 1px solid var(--border-color);
         }
+        /* ยกเว้นแถวแรกสุด ไม่ต้องโดนดึงขึ้นไป */
+        .photo-card:nth-child(1), .photo-card:nth-child(2), .photo-card:nth-child(3), .photo-card:nth-child(4) {
+            margin-top: 0;
+        }
+
         .photo-card:hover, .photo-card:active { 
-            transform: translateY(-6px) scale(1.03); 
-            box-shadow: 0 12px 30px rgba(0,0,0,0.8); 
-            border-color: #888; 
+            transform: translateY(-8px) scale(1.03); 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.8); 
+            border-color: #fff; 
+            z-index: 9999 !important; /* จิ้มใบไหน ใบนั้นกระเด้งมาหน้าสุดทันที */
         }
         
         .photo-img { width: 100%; height: 100%; object-fit: cover; }
         
         .photo-time { 
             position: absolute; 
-            bottom: 10px; 
-            right: 10px; 
+            bottom: 8px; 
+            right: 8px; 
             background: rgba(0, 0, 0, 0.75); 
             backdrop-filter: blur(4px); 
-            padding: 4px 10px; 
+            padding: 4px 8px; 
             border-radius: 6px; 
-            font-size: 0.75rem; 
+            font-size: 0.7rem; 
             color: #fff; 
             pointer-events: none; 
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Modal หน้าต่างซูมรูป */
+        /* Modal หน้าต่างซูมรูป รองรับ Responsive ทุก Device */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s ease; backdrop-filter: blur(8px); }
         .modal-overlay.active { opacity: 1; visibility: visible; }
         
@@ -101,8 +109,10 @@
 
         #empty-state { width: 100%; grid-column: 1 / -1; text-align: center; padding: 100px 20px; color: #666; font-size: 1.2rem; }
         
+        /* Responsive สำหรับมือถือและจอเล็ก */
         @media (max-width: 768px) {
-            .gallery-container { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); padding: 15px; gap: 15px; }
+            .gallery-container { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); padding: 25px 15px; column-gap: 15px; }
+            .photo-card:nth-child(3), .photo-card:nth-child(4) { margin-top: -50px; } /* ปรับกฏการยกเว้นแถวแรกในมือถือ */
             .modal-content { flex-direction: column; overflow-y: auto; max-height: 95vh; width: 95%; }
             .modal-image-col { padding: 10px; min-height: 40vh; }
             .modal-image-col img { max-height: 40vh; }
@@ -174,6 +184,7 @@
         let photoList = [];
         let currentIndex = 0;
         let currentPhotoUrl = "";
+        let initialLoad = true;
 
         function formatTime(timestamp) {
             if (!timestamp) return "";
@@ -197,23 +208,26 @@
                 if (data.url) photoList.push(data);
             });
 
-            // เรียงลำดับจากใหม่ไปเก่า (รูปล่าสุดอยู่ซ้ายบนสุดเสมอ)
+            // 🌟 1. เรียงลำดับจากเก่าไปใหม่ (รูปล่าสุดจะไปต่อคิวเป็นใบสุดท้าย ขวาล่างสุด)
             photoList.sort((a, b) => {
                 const timeA = a.createdAt ? a.createdAt.toMillis() : Date.now();
                 const timeB = b.createdAt ? b.createdAt.toMillis() : Date.now();
-                return timeB - timeA; 
+                return timeA - timeB; 
             });
+
+            // 🌟 2. อัปเดต Z-Index เพิ่มขึ้นเรื่อยๆ (ใบล่าสุดพลังจะเยอะสุด ทับใบเก่าๆ)
+            let zIndexCounter = 1;
 
             photoList.forEach((data, index) => {
                 const card = document.createElement('div');
                 card.className = 'photo-card';
+                card.style.zIndex = zIndexCounter++; 
                 
                 card.innerHTML = `
                     <img class="photo-img" src="${data.url}" loading="lazy">
                     <div class="photo-time">${formatTime(data.createdAt)}</div>
                 `;
                 
-                // คลิกเปิดดูรูปเต็มจอ ทำงานได้ 100% ทุกใบ
                 card.addEventListener('click', () => {
                     currentIndex = index;
                     showModalImage(currentIndex);
@@ -222,6 +236,20 @@
                 
                 galleryContainer.appendChild(card);
             });
+
+            // 🌟 3. สไลด์หน้าจอลงมาล่างสุดอัตโนมัติ เพื่อให้ลูกค้าเห็นรูปตัวเองทันที
+            setTimeout(() => {
+                if (initialLoad) {
+                    galleryContainer.scrollTop = galleryContainer.scrollHeight;
+                    initialLoad = false;
+                } else {
+                    // หากมีรูปใหม่มา ให้เลื่อนลงล่างสุดแบบนุ่มนวล
+                    galleryContainer.scrollTo({
+                        top: galleryContainer.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 300);
         });
 
         function showModalImage(index) {
@@ -253,6 +281,7 @@
             showModalImage(currentIndex);
         });
 
+        // Swipe สำหรับหน้าจอสัมผัส
         let touchStartX = 0;
         modalImg.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
         modalImg.addEventListener('touchend', (e) => {
@@ -283,7 +312,7 @@
                     try { await navigator.share({ title: 'My Blessing Snap', url: currentPhotoUrl }); } catch (e) { console.log(e); }
                 }
             } else {
-                alert('เบราว์เซอร์นี้ไม่รองรับระบบแชร์โดยตรง กรุณาใช้กล้องแสกน QR Code ครับ');
+                alert('เบราว์เซอร์นี้ไม่รองรับการแชร์โดยตรง กรุณาใช้กล้องแสกน QR Code ครับ');
             }
         });
 
