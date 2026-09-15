@@ -12,42 +12,76 @@
         
         body, html { width: 100%; height: 100%; background-color: var(--bg-color); color: var(--accent-white); overflow: hidden; }
         
-        header { position: sticky; top: 0; background: rgba(8, 8, 8, 0.85); backdrop-filter: blur(10px); z-index: 50; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        header { position: sticky; top: 0; background: rgba(8, 8, 8, 0.85); backdrop-filter: blur(10px); z-index: 50; padding: 16px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
         .brand-header { display: flex; align-items: center; gap: 8px; letter-spacing: 4px; font-size: 1.2rem; font-weight: 900; text-transform: uppercase; }
         .brand-badge { background: var(--accent-white); color: #000; padding: 2px 6px; font-size: 0.7rem; border-radius: 3px; font-weight: 900; }
         .live-indicator { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: bold; color: #4ade80; }
         .pulse { width: 10px; height: 10px; background: #4ade80; border-radius: 50%; animation: blink 1.5s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        /* 🌟 เลย์เอาต์สี่เหลี่ยม เห็นภาพครบ ไม่โดนตัด */
-        .gallery-container { padding: 30px; height: calc(100vh - 70px); overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 24px; align-content: start; }
+        /* 🌟 เลย์เอาต์แบบสี่เหลี่ยมจัตุรัส (Instagram Style) ดูง่าย สบายตา */
+        .gallery-container { 
+            padding: 40px; 
+            height: calc(100vh - 70px); 
+            overflow-y: auto; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            gap: 24px; 
+            align-content: start; 
+            justify-items: center;
+        }
         .gallery-container::-webkit-scrollbar { width: 8px; }
         .gallery-container::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
         
-        .photo-card { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; cursor: pointer; transition: 0.2s; position: relative; 
-            aspect-ratio: 1240 / 1754; /* ล็อกสัดส่วนให้เท่ารูปจริง */
-            display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .photo-card:hover { transform: translateY(-4px) scale(1.02); border-color: #777; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .photo-card { 
+            width: 100%;
+            max-width: 240px; 
+            background: #111; 
+            border-radius: 16px; 
+            overflow: hidden; 
+            cursor: pointer; 
+            transition: 0.2s;
+            position: relative; 
+            aspect-ratio: 1 / 1; /* บังคับเป็นสี่เหลี่ยมจัตุรัส 100% */
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            border: 2px solid transparent;
+        }
+        .photo-card:hover { transform: translateY(-5px); border-color: #0a84ff; box-shadow: 0 8px 25px rgba(10, 132, 255, 0.3); }
         
         .photo-img { width: 100%; height: 100%; object-fit: cover; }
         
-        .photo-time { position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); padding: 25px 12px 10px; font-size: 0.8rem; color: #ddd; text-align: right; pointer-events: none; }
+        .photo-time { position: absolute; bottom: 12px; left: 12px; background: rgba(0,0,0,0.7); padding: 4px 10px; font-size: 0.75rem; color: #fff; font-weight: bold; border-radius: 12px; pointer-events: none; border: 1px solid #444; }
 
-        /* หน้าต่าง Modal แบบคลีนๆ มีแค่รูปใหญ่กับ QR Code */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s ease; backdrop-filter: blur(8px); }
+        /* Modal หน้าต่างซูมรูป */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s ease; backdrop-filter: blur(8px); }
         .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal-content { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 20px; width: 90%; max-width: 900px; max-height: 90vh; display: flex; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal-content { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 20px; width: 90%; max-width: 950px; max-height: 90vh; display: flex; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
         
-        .modal-image-col { flex: 1.5; background: #000; display: flex; justify-content: center; align-items: center; padding: 20px; position: relative; }
-        .modal-image-col img { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; }
+        .modal-main-col { flex: 1.5; background: #000; display: flex; flex-direction: column; padding: 20px; border-right: 1px solid #222; }
+        .main-image-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; min-height: 0; }
+        .main-image-wrapper img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; transition: 0.3s ease; }
+        
+        /* แถบเลือกรูปด้านล่าง (ให้ลูกค้าเลือกว่าจะโหลดรูปรวม หรือรูปเดี่ยว) */
+        .thumbnail-strip { display: flex; gap: 12px; margin-top: 20px; padding-bottom: 10px; overflow-x: auto; justify-content: center; min-height: 80px; }
+        .thumbnail-strip::-webkit-scrollbar { height: 6px; }
+        .thumbnail-strip::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        
+        .thumb-item { width: 60px; height: 60px; border-radius: 8px; overflow: hidden; cursor: pointer; opacity: 0.4; border: 2px solid transparent; transition: 0.2s; position: relative; flex-shrink: 0; background: #222; }
+        .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+        .thumb-item:hover { opacity: 0.8; transform: translateY(-2px); }
+        .thumb-item.active { opacity: 1; border-color: #0a84ff; transform: scale(1.1); box-shadow: 0 4px 10px rgba(10, 132, 255, 0.3); z-index: 2; }
+        .thumb-label { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.7); font-size: 0.55rem; text-align: center; padding: 2px 0; font-weight: bold; text-transform: uppercase; }
 
         .modal-action-col { flex: 1; padding: 40px 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #111; position: relative; }
         .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: #888; font-size: 2rem; cursor: pointer; transition: 0.2s; }
         .close-btn:hover { color: #fff; transform: scale(1.1); }
         
         .qr-wrapper { background: #fff; padding: 20px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; }
-        #modal-qrcode { width: 180px; height: 180px; }
-        .qr-text { color: #000; font-size: 1rem; font-weight: 800; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px;}
+        #modal-qrcode { width: 160px; height: 160px; }
+        .qr-text { color: #000; font-size: 1rem; font-weight: 800; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px; text-align: center;}
         
         .btn-share { background: #0a84ff; color: white; border: none; padding: 18px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 40px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; width: 100%; justify-content: center; margin-top: 10px; }
         .btn-share:hover { background: #006ee6; transform: scale(1.02); }
@@ -55,9 +89,9 @@
         #empty-state { width: 100%; grid-column: 1 / -1; text-align: center; padding: 100px 20px; color: #666; font-size: 1.2rem; }
         
         @media (max-width: 768px) {
-            .modal-content { flex-direction: column; overflow-y: auto; }
-            .modal-image-col { padding: 10px; height: 50vh; }
-            .modal-image-col img { max-height: 100%; }
+            .gallery-container { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); padding: 20px; gap: 15px;}
+            .modal-content { flex-direction: column; overflow-y: auto; max-height: 95vh; }
+            .modal-main-col { border-right: none; border-bottom: 1px solid #222; height: 55vh; }
             .modal-action-col { padding: 30px 20px; }
         }
     </style>
@@ -73,21 +107,26 @@
         <div id="empty-state">กำลังโหลดรูปภาพ...</div>
     </div>
 
+    <!-- หน้าต่าง Modal -->
     <div class="modal-overlay" id="modal-overlay">
         <div class="modal-content">
-            <div class="modal-image-col">
-                <img id="modal-img" src="" alt="Photobooth Snap">
+            <div class="modal-main-col">
+                <div class="main-image-wrapper">
+                    <img id="modal-img" src="" alt="Photobooth Snap">
+                </div>
+                <!-- แถบเลือกรูปย่อย -->
+                <div class="thumbnail-strip" id="modal-thumbnails"></div>
             </div>
             <div class="modal-action-col">
                 <button class="close-btn" id="close-modal">&times;</button>
                 <div class="qr-wrapper">
                     <div id="modal-qrcode"></div>
-                    <div class="qr-text" id="qr-text">สแกนเพื่อโหลดรูปรวม</div>
+                    <div class="qr-text" id="qr-text">สแกนเพื่อรับไฟล์นี้</div>
                 </div>
                 
                 <button class="btn-share" id="share-btn">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                    แชร์ (AirDrop)
+                    แชร์ (AirDrop / LINE)
                 </button>
             </div>
         </div>
@@ -113,11 +152,12 @@
         const galleryContainer = document.getElementById('gallery-container');
         const modalOverlay = document.getElementById('modal-overlay');
         const modalImg = document.getElementById('modal-img');
+        const thumbsContainer = document.getElementById('modal-thumbnails');
         const qrContainer = document.getElementById('modal-qrcode');
         const closeModalBtn = document.getElementById('close-modal');
         const shareBtn = document.getElementById('share-btn');
         
-        let currentPhotoUrl = "";
+        let currentShareUrl = "";
 
         function formatTime(timestamp) {
             if (!timestamp) return "";
@@ -139,45 +179,97 @@
                     const card = document.createElement('div');
                     card.className = 'photo-card';
                     
+                    let coverImgUrl = data.url;
+                    let objectPosition = "center";
+
+                    // 🌟 ถ้ารูปนั้นมีไฟล์หน้าเดี่ยว ให้ดึงรูปเดี่ยวรูปแรกมาโชว์ที่หน้าปก
+                    if (data.singleUrls && data.singleUrls.length > 0) {
+                        coverImgUrl = data.singleUrls[0];
+                    } else {
+                        // 🌟 ถ้ารูปเก่าไม่มีหน้าเดี่ยว ให้โชว์รูปรวมแต่โฟกัสไปที่ 'ด้านล่าง' แทน จะได้เห็นหน้าคนชัดๆ
+                        objectPosition = "bottom";
+                    }
+                    
                     card.innerHTML = `
-                        <img class="photo-img" src="${data.url}" loading="lazy">
+                        <img class="photo-img" src="${coverImgUrl}" style="object-position: ${objectPosition};" loading="lazy">
                         <div class="photo-time">${formatTime(data.createdAt)}</div>
                     `;
                     
-                    card.addEventListener('click', () => {
-                        currentPhotoUrl = data.url;
-                        modalImg.src = currentPhotoUrl;
-                        
-                        qrContainer.innerHTML = '';
-                        new QRCode(qrContainer, { text: currentPhotoUrl, width: 180, height: 180 });
-                        modalOverlay.classList.add('active');
-                    });
-                    
+                    card.addEventListener('click', () => openModal(data));
                     galleryContainer.appendChild(card);
                 }
             });
         });
 
-        // ฟังก์ชันกดแชร์ (แชร์สิ่งที่กำลังโชว์อยู่)
+        // เปิดหน้าต่าง Modal 
+        function openModal(data) {
+            thumbsContainer.innerHTML = '';
+            let items = [];
+            
+            // 1. เพิ่มกรอบรูปรวมเข้าลิสต์
+            if (data.url) items.push({ url: data.url, label: 'FRAME' });
+            
+            // 2. เพิ่มรูปเดี่ยวทั้งหมดเข้าลิสต์ให้ลูกค้าเลือกโหลดแยกได้
+            if (data.singleUrls && data.singleUrls.length > 0) {
+                data.singleUrls.forEach((url, i) => {
+                    items.push({ url: url, label: `SHOT ${i+1}` });
+                });
+            }
+
+            // ถ้ามีรูปเดียวให้ซ่อนแถบเลือกไปเลยเพื่อความคลีน
+            if (items.length <= 1) {
+                thumbsContainer.style.display = 'none';
+            } else {
+                thumbsContainer.style.display = 'flex';
+                items.forEach((item, index) => {
+                    const thumb = document.createElement('div');
+                    thumb.className = `thumb-item ${index === 0 ? 'active' : ''}`;
+                    thumb.innerHTML = `
+                        <img src="${item.url}" loading="lazy">
+                        <div class="thumb-label">${item.label}</div>
+                    `;
+                    thumb.onclick = () => selectItem(item.url, thumb);
+                    thumbsContainer.appendChild(thumb);
+                });
+            }
+
+            // เลือกโชว์รูปรวมเป็นค่าเริ่มต้น
+            selectItem(items[0].url, thumbsContainer.firstChild);
+            modalOverlay.classList.add('active');
+        }
+
+        // อัปเดตหน้าจอเมื่อเปลี่ยนรูป
+        function selectItem(url, thumbElement) {
+            document.querySelectorAll('.thumb-item').forEach(el => el.classList.remove('active'));
+            if (thumbElement) thumbElement.classList.add('active');
+
+            currentShareUrl = url;
+            modalImg.src = url;
+            
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, { text: url, width: 160, height: 160 });
+        }
+
+        // แชร์รูป
         shareBtn.addEventListener('click', async () => {
-            if (!currentPhotoUrl) return;
+            if (!currentShareUrl) return;
 
             if (navigator.share) {
                 try {
-                    const response = await fetch(currentPhotoUrl);
+                    const response = await fetch(currentShareUrl);
                     const blob = await response.blob();
                     const file = new File([blob], `blessing-snap.jpg`, { type: blob.type });
 
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         await navigator.share({ files: [file], title: 'My Blessing Snap' });
                     } else {
-                        await navigator.share({ title: 'My Blessing Snap', url: currentPhotoUrl });
+                        await navigator.share({ title: 'My Blessing Snap', url: currentShareUrl });
                     }
                 } catch (error) {
-                    try { await navigator.share({ title: 'My Blessing Snap', url: currentPhotoUrl }); } catch (e) { console.log(e); }
+                    try { await navigator.share({ title: 'My Blessing Snap', url: currentShareUrl }); } catch (e) { console.log(e); }
                 }
             } else {
-                alert('เบราว์เซอร์นี้ไม่รองรับการแชร์โดยตรง กรุณาใช้โทรศัพท์แสกน QR Code ครับ');
+                alert('เบราว์เซอร์นี้ไม่รองรับการแชร์โดยตรง กรุณาใช้กล้องโทรศัพท์แสกน QR Code ครับ');
             }
         });
 
