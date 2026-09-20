@@ -14,10 +14,12 @@
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.4s ease; z-index: 1; pointer-events: none; }
         .screen.active { opacity: 1; visibility: visible; z-index: 10; pointer-events: auto; }
         
-        .btn { background: var(--accent-white); color: #000000; border: none; padding: 14px 32px; font-size: 1rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border-radius: 40px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; width: 100%; }
-        .btn:hover { transform: scale(1.04); background: #e6e6e6; }
-        .btn-secondary { background: transparent; color: var(--accent-white); border: 1px solid var(--border-color); }
-        .btn-secondary:hover { background: var(--surface-hover); border-color: var(--accent-white); }
+        /* 🌟 ปรับแต่งปุ่มกดให้สวย ใหญ่ และสีสดใส */
+        .btn { background: var(--accent-white); color: #000000; border: none; padding: 18px 32px; font-size: 1.1rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; border-radius: 16px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .btn:hover { transform: scale(1.02); filter: brightness(1.1); }
+        .btn:active { transform: scale(0.98); }
+        .btn-secondary { background: #1a1a1a; color: var(--accent-white); border: 2px solid var(--border-color); box-shadow: none; }
+        .btn-secondary:hover { background: #2a2a2a; border-color: var(--accent-white); }
         
         .brand-header { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; letter-spacing: 6px; font-size: 1.2rem; font-weight: 900; color: var(--accent-white); z-index: 20; text-transform: uppercase; pointer-events: none; }
         .brand-badge { background: var(--accent-white); color: #000; padding: 2px 6px; font-size: 0.7rem; border-radius: 3px; font-weight: 900; }
@@ -38,14 +40,16 @@
         .section-header { text-align: center; margin-bottom: 24px; }
         .section-title { font-size: 2rem; font-weight: 800; letter-spacing: 4px; margin-bottom: 8px; }
         .section-desc { font-size: 0.95rem; color: var(--text-muted); }
-        .carousel-wrapper { position: relative; width: 100%; max-width: 1000px; display: flex; align-items: center; margin: 0 auto; }
-        .carousel-track { display: flex; gap: 30px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 30px 10px; width: 100%; scrollbar-width: none; }
+        .carousel-wrapper { position: relative; width: 100%; max-width: 1200px; display: flex; align-items: center; justify-content: space-between; margin: 0 auto; padding: 0 20px; }
+        .carousel-track { display: flex; gap: 30px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 30px 10px; flex: 1; margin: 0 35px; scrollbar-width: none; }
         .template-card { flex: 0 0 280px; height: 420px; scroll-snap-align: center; background: var(--surface-color); border: 2px solid var(--border-color); border-radius: 16px; padding: 16px; cursor: pointer; transition: all 0.3s; display: flex; flex-direction: column;}
         .template-card.selected { border-color: var(--accent-white); box-shadow: 0 0 30px rgba(255,255,255,0.25); background: #1a1a1a; transform: translateY(-8px); }
         .template-preview-container { width: 100%; flex: 1; background: #fff; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;}
         .template-info { text-align: center; padding-top: 5px; }
         .template-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; color: var(--accent-white); text-transform: uppercase; letter-spacing: 1px;}
-        .nav-btn { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid #444; width: 48px; height: 48px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; }
+        .nav-btn { background: rgba(255,255,255,0.15); color: #fff; border: 2px solid #555; width: 72px; height: 72px; border-radius: 50%; font-size: 2.2rem; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; font-weight: bold; z-index: 10; flex-shrink: 0; }
+        .nav-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); border-color: #fff; }
+        .nav-btn:active { transform: scale(0.95); }
         .carousel-controls { display: flex; gap: 16px; margin-top: 20px; justify-content: center;}
 
         #screen-3 { padding: 70px 20px 20px; background: #050505; }
@@ -79,7 +83,7 @@
 
         .result-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: 0.3s; }
         .result-overlay.active { opacity: 1; visibility: visible; }
-        .result-container { display: flex; gap: 30px; align-items: center; max-width: 900px; }
+        .result-container { display: flex; gap: 40px; align-items: center; max-width: 1000px; }
         .canvas-preview-wrapper { background: #000; padding: 12px; border-radius: 8px; max-height: 75vh; }
         
         .canvas-inner-wrapper { position: relative; display: inline-block; max-height: 70vh; }
@@ -89,17 +93,18 @@
         .retake-icon-btn { position: absolute; top: 12px; right: 12px; background: rgba(0, 0, 0, 0.65); color: #ffffff; border: 2px solid #ffffff; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 10; backdrop-filter: blur(4px); }
         .retake-icon-btn:hover { background: #ffffff; color: #000000; transform: scale(1.15); }
         
-        .result-actions { display: flex; flex-direction: column; gap: 16px; min-width: 240px; }
-        .qr-box { background: #fff; padding: 15px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; }
-        #qrcode { width: 140px; height: 140px; }
-        #qr-status { color: #333; font-size: 0.85rem; font-weight: bold; margin-top: 12px; text-transform: uppercase; text-align: center;}
+        /* 🌟 ปรับปรุง Layout ฝั่งขวาให้สวยงามและใหญ่ขึ้น */
+        .result-actions { display: flex; flex-direction: column; gap: 14px; min-width: 320px; }
+        .qr-box { background: #fff; padding: 24px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; margin-bottom: 4px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+        #qrcode { width: 160px; height: 160px; }
+        #qr-status { color: #222; font-size: 0.95rem; font-weight: 800; margin-top: 16px; text-transform: uppercase; text-align: center; letter-spacing: 1px;}
         
-        .qty-control-wrapper { background: #1e1e1e; border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
-        .qty-label { font-size: 0.9rem; font-weight: bold; color: #aaa; }
-        .qty-buttons { display: flex; align-items: center; gap: 14px; }
-        .qty-btn { background: #2a2a2a; color: #fff; border: 1px solid #444; width: 38px; height: 38px; border-radius: 50%; font-size: 1.3rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .qty-control-wrapper { background: #1e1e1e; border: 1px solid var(--border-color); border-radius: 16px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .qty-label { font-size: 1.05rem; font-weight: bold; color: #ccc; }
+        .qty-buttons { display: flex; align-items: center; gap: 16px; }
+        .qty-btn { background: #2a2a2a; color: #fff; border: 1px solid #444; width: 44px; height: 44px; border-radius: 50%; font-size: 1.5rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .qty-btn:active { background: #fff; color: #000; transform: scale(0.92); }
-        #print-copies-count { font-size: 1.3rem; font-weight: 900; min-width: 24px; text-align: center; color: #4ade80; }
+        #print-copies-count { font-size: 1.5rem; font-weight: 900; min-width: 30px; text-align: center; color: #4ade80; }
 
         #loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s; }
         #loading-overlay.active { opacity: 1; visibility: visible; }
@@ -148,7 +153,7 @@
             <button class="nav-btn" id="next-btn">&gt;</button>
         </div>
         <div class="carousel-controls">
-            <button class="btn" id="confirm-template-btn" style="width: 250px; font-size: 1.2rem; padding: 18px 32px;">เลือกกรอบนี้ &rarr;</button>
+            <button class="btn" id="confirm-template-btn" style="width: 250px; font-size: 1.2rem; padding: 18px 32px; background: #0ea5e9; color: white;">เลือกกรอบนี้ &rarr;</button>
         </div>
     </section>
 
@@ -186,10 +191,10 @@
                 </div>
 
                 <div id="start-shoot-container" style="text-align: center; margin-top: auto; padding-top: 10px;">
-                    <button id="manual-start-btn" class="btn" style="background: #4ade80; color: #000; font-size: 1.1rem; padding: 18px 0; border-radius: 12px; box-shadow: 0 4px 15px rgba(74, 222, 128, 0.25);">
+                    <button id="manual-start-btn" class="btn" style="background: #10b981; color: white; font-size: 1.1rem; padding: 18px 0; border-radius: 12px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
                         เริ่มถ่ายภาพ
                     </button>
-                    <div id="auto-shoot-msg" style="text-align: center; font-weight: bold; color: #4ade80; font-size: 1rem; border: 2px dashed #4ade80; padding: 16px; border-radius: 10px; display: none;">
+                    <div id="auto-shoot-msg" style="text-align: center; font-weight: bold; color: #10b981; font-size: 1rem; border: 2px dashed #10b981; padding: 16px; border-radius: 10px; display: none;">
                         กำลังดำเนินการถ่ายภาพ...
                     </div>
                 </div>
@@ -221,10 +226,25 @@
                         </div>
                     </div>
 
-                    <button class="btn" id="download-btn">DOWNLOAD PHOTO</button>
-                    <button class="btn" id="print-btn" style="background: #16a34a; color: white;">PRINT / สั่งพิมพ์</button>
-                    <button class="btn btn-secondary" id="retake-btn">RETAKE ALL / ถ่ายใหม่ทั้งหมด</button>
-                    <button class="btn btn-secondary" id="home-btn">FINISH / กลับหน้าหลัก</button>
+                    <!-- 🌟 1. ปุ่ม PRINT ปุ่มเดียวชัดเจน โทนเขียวสดใส Vibrant/Neon -->
+                    <button class="btn" id="print-btn" style="background: #10b981; color: white; padding: 18px; font-size: 1.15rem;">
+                        🖨️ PRINT / สั่งพิมพ์
+                    </button>
+
+                    <!-- 🌟 2. ปุ่ม CHANGE TEMPLATE โทนฟ้าสดใส -->
+                    <button class="btn" id="change-template-btn" style="background: #0284c7; color: white; font-size: 0.95rem;">
+                        CHANGE TEMPLATE / เลือกกรอบใหม่
+                    </button>
+                    
+                    <!-- 🌟 3. ปุ่ม RETAKE ALL โทนส้มสดใส -->
+                    <button class="btn" id="retake-btn" style="background: #ea580c; color: white; font-size: 0.95rem;">
+                        RETAKE ALL / ถ่ายใหม่ทั้งหมด
+                    </button>
+                    
+                    <!-- 🌟 4. ปุ่ม FINISH โทนขอบแดงสดใส -->
+                    <button class="btn btn-secondary" id="home-btn" style="border-color: #f43f5e; color: #f43f5e; font-size: 0.95rem;">
+                        FINISH / กลับหน้าหลัก
+                    </button>
                 </div>
             </div>
         </div>
@@ -237,6 +257,8 @@
     </div>
 
     <canvas id="capture-canvas" style="display: none;"></canvas>
+    <!-- 🌟 Canvas สำหรับเก็บภาพต้นฉบับพื้นหลังขาว 100% เอาไว้สั่งพิมพ์ประหยัดหมึก -->
+    <canvas id="clean-canvas" style="display: none;"></canvas>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
@@ -266,12 +288,11 @@
                 videoDevices: [], currentDeviceId: null 
             };
             
-// 🌟 อัปเดตค่าสีเจาะรูใหม่ ใช้สีสด 100% ป้องกันการเจาะทะลุหน้าคน
             const CHROMA_TARGETS = [
-                { id: 1, r: 255, g: 0, b: 255 },   // ช็อต 1: สีชมพูบานเย็น (#FF00FF)
-                { id: 2, r: 0, g: 255, b: 0 },     // ช็อต 2: สีเขียวสว่าง (#00FF00)
-                { id: 3, r: 0, g: 255, b: 255 },   // ช็อต 3: สีฟ้าสว่าง (#00FFFF)
-                { id: 4, r: 0, g: 0, b: 255 }      // ช็อต 4: สีน้ำเงิน (#0000FF)
+                { id: 1, r: 255, g: 0, b: 255 },
+                { id: 2, r: 0, g: 255, b: 0 },
+                { id: 3, r: 0, g: 255, b: 255 },
+                { id: 4, r: 0, g: 0, b: 255 }
             ];
 
             let audioCtx = null;
@@ -447,8 +468,6 @@
                 }
             }
 
-            // 🌟 แก้ไข: Local Area Pixel-Perfect Chroma Key + Mask Dilation 🌟
-            // ลบรอยเส้นจางๆ ตามขอบได้เนียนกริบ 100% โดยไม่ทำลายตัวหนังสือและโลโก้
             function analyzeAndProcessTemplate(imageSrc) {
                 return new Promise((resolve) => {
                     const img = new Image(); img.crossOrigin = "anonymous";
@@ -469,7 +488,6 @@
                             id: t.id, target: t, minX: width, maxX: 0, minY: height, maxY: 0, count: 0 
                         }));
 
-                        // 1. ค้นหากรอบ Bounding Box หลัก (จำกัดความแม่นยำสูง เพื่อไม่ให้ลามไปที่อื่น)
                         for (let y = 0; y < height; y++) {
                             for (let x = 0; x < width; x++) {
                                 const idx = (y * width + x) * 4;
@@ -492,9 +510,8 @@
                         }
 
                         const frames = [];
-                        const bleed = 6; // เผื่อระยะซ่อนรูปภาพเข้าไปใต้ขอบ
+                        const bleed = 6; 
                         
-                        // สร้าง Mask ชั่วคราว เพื่อจดจำตำแหน่งสีที่ต้องเจาะ
                         const holeMask = new Uint8Array(width * height);
 
                         bounds.forEach(b => {
@@ -513,14 +530,12 @@
                                         h: h + (bleed * 2) 
                                     });
 
-                                    // จำกัดเขตการกวาดล้างเฉพาะแค่รอบๆ กรอบรูปเท่านั้น (ตัวอักษรด้านบนรอด 100%)
                                     const searchPadding = 10;
                                     const startX = Math.max(0, b.minX - searchPadding);
                                     const endX = Math.min(width, b.maxX + searchPadding);
                                     const startY = Math.max(0, b.minY - searchPadding);
                                     const endY = Math.min(height, b.maxY + searchPadding);
 
-                                    // Step 1: สแกนหาสีเป้าหมายเพื่อสร้าง "หลุมแกนกลาง"
                                     for (let y = startY; y <= endY; y++) {
                                         for (let x = startX; x <= endX; x++) {
                                             const idx = (y * width + x) * 4;
@@ -528,15 +543,12 @@
                                             const t = b.target;
                                             const dist = Math.sqrt((r-t.r)**2 + (g-t.g)**2 + (b_color-t.b)**2);
                                             
-                                            // จับเฉพาะสีที่ใกล้เคียงกับสีเฟรมมากๆ (หลีกเลี่ยงการจับสีพื้นหลัง)
                                             if (dist < 90) {
                                                 holeMask[y * width + x] = 1; 
                                             }
                                         }
                                     }
 
-                                    // Step 2: สั่งระเบิดขอบเขตหลุมให้ขยายออกไปอีก 4 พิกเซล
-                                    // กระบวนการนี้จะกวาดล้าง "รอยเส้นบางๆ ลูกผสม" ออกไปได้เกลี้ยงเกลา
                                     const erodeRadius = 4;
                                     for (let y = startY; y <= endY; y++) {
                                         for (let x = startX; x <= endX; x++) {
@@ -547,7 +559,7 @@
                                                         const nx = x + dx;
                                                         if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
                                                             const targetIdx = (ny * width + nx) * 4;
-                                                            overlayData[targetIdx + 3] = 0; // ลบล้างให้โปร่งใสสนิท
+                                                            overlayData[targetIdx + 3] = 0; 
                                                         }
                                                     }
                                                 }
@@ -772,11 +784,8 @@
                 hiddenCanvas.width = webcamElement.videoWidth || 1920; 
                 hiddenCanvas.height = webcamElement.videoHeight || 1080;
                 
-                ctx.save(); 
-                ctx.translate(hiddenCanvas.width, 0); 
-                ctx.scale(-1, 1); 
+                // 🌟 บันทึกภาพโดยไม่กลับซ้าย-ขวา เพื่อให้ตัวอักษรบนเสื้อและโลโก้อ่านออกปกติ
                 ctx.drawImage(webcamElement, 0, 0, hiddenCanvas.width, hiddenCanvas.height); 
-                ctx.restore();
                 
                 const imgData = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height); 
                 const data = imgData.data;
@@ -820,34 +829,34 @@
                 
                 const photos = state.capturedPhotos; if (photos.length < state.totalShots) return;
                 const stripCanvas = document.getElementById('strip-canvas');
-                const printCanvas = document.getElementById('print-canvas'); 
+                const cleanCanvas = document.getElementById('clean-canvas'); // 🌟 ใช้สำหรับภาพพื้นหลังขาวตอนปรินท์
                 
                 const ctx = stripCanvas.getContext('2d'); 
-                const printCtx = printCanvas.getContext('2d');
+                const cleanCtx = cleanCanvas.getContext('2d');
 
                 const images = []; let loaded = 0;
                 photos.forEach((src, idx) => {
                     const img = new Image();
                     img.onload = () => { 
                         images[idx] = img; loaded++; 
-                        if (loaded === state.totalShots) drawStripLayout(ctx, printCtx, stripCanvas, printCanvas, images); 
+                        if (loaded === state.totalShots) drawStripLayout(ctx, cleanCtx, stripCanvas, cleanCanvas, images); 
                     };
                     img.src = src;
                 });
             }
 
-            function drawStripLayout(ctx, printCtx, stripCanvas, printCanvas, images) {
+            function drawStripLayout(ctx, cleanCtx, stripCanvas, cleanCanvas, images) {
                 const width = 1240; 
                 const height = 1754; 
                 
                 stripCanvas.width = width; stripCanvas.height = height;
-                printCanvas.width = width; printCanvas.height = height;
+                cleanCanvas.width = width; cleanCanvas.height = height;
         
                 ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
-                printCtx.fillStyle = '#ffffff'; printCtx.fillRect(0, 0, width, height);
+                cleanCtx.fillStyle = '#ffffff'; cleanCtx.fillRect(0, 0, width, height);
 
                 ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-                printCtx.imageSmoothingEnabled = true; printCtx.imageSmoothingQuality = 'high';
+                cleanCtx.imageSmoothingEnabled = true; cleanCtx.imageSmoothingQuality = 'high';
 
                 const retakeContainer = document.getElementById('retake-buttons-container');
                 retakeContainer.innerHTML = ''; 
@@ -865,8 +874,9 @@
                             sw = img.width; sh = img.width / targetRatio; sx = 0; sy = (img.height - sh) / 2; 
                         }
                         
+                        // วาดรูปลงบนทั้ง 2 แผ่น
                         ctx.drawImage(img, sx, sy, sw, sh, f.x, f.y, f.w, f.h);
-                        printCtx.drawImage(img, sx, sy, sw, sh, f.x, f.y, f.w, f.h);
+                        cleanCtx.drawImage(img, sx, sy, sw, sh, f.x, f.y, f.w, f.h);
 
                         const zone = document.createElement('div');
                         zone.className = 'retake-frame-zone';
@@ -883,32 +893,15 @@
                         
                         zone.appendChild(btn);
                         retakeContainer.appendChild(zone);
-
-                        const pData = printCtx.getImageData(f.x, f.y, f.w, f.h);
-                        const pd = pData.data;
-                        const fw = Math.round(f.w);
-                        const fh = Math.round(f.h);
-
-                        for (let y = 0; y < fh; y++) {
-                            for (let x = 0; x < fw; x++) {
-                                const idx = (y * fw + x) * 4;
-                                let r = pd[idx]; let g = pd[idx+1]; let b = pd[idx+2];
-                                let gray = 0.299 * r + 0.587 * g + 0.114 * b;
-                                gray = gray * 0.92; 
-                                gray = (gray - 128) * 1.1 + 128; 
-                                let finalColor = Math.max(0, Math.min(255, gray));
-                                pd[idx] = pd[idx+1] = pd[idx+2] = finalColor;
-                            }
-                        }
-                        printCtx.putImageData(pData, f.x, f.y);
                     }
                 });
 
                 if (state.processedOverlayCanvas) {
                     ctx.drawImage(state.processedOverlayCanvas, 0, 0, width, height);
-                    printCtx.drawImage(state.processedOverlayCanvas, 0, 0, width, height);
+                    cleanCtx.drawImage(state.processedOverlayCanvas, 0, 0, width, height);
                 }
 
+                // 🌟 ย้อมสีวินเทจเฉพาะแผ่นที่จะโชว์ให้แสกน QR โหลดเข้ามือถือเท่านั้น
                 ctx.save();
                 ctx.globalCompositeOperation = 'multiply';
                 ctx.fillStyle = '#fff6e3';
@@ -920,6 +913,7 @@
 
             function showResultAndUpload(stripCanvas) {
                 document.getElementById('result-overlay').classList.add('active'); state.isShooting = false; 
+
                 const qrContainer = document.getElementById('qrcode'); const qrStatus = document.getElementById('qr-status');
                 qrContainer.innerHTML = ""; qrStatus.textContent = "กำลังอัปโหลด...";
 
@@ -933,7 +927,8 @@
                     .then(res => res.json())
                     .then(json => {
                         if (json.success) {
-                            new QRCode(qrContainer, { text: json.data.url, width: 140, height: 140 });
+                            // ปรับขนาด QR ให้ใหญ่ขึ้นตามขนาดกล่องที่ใหญ่ขึ้น
+                            new QRCode(qrContainer, { text: json.data.url, width: 160, height: 160 });
                             qrStatus.textContent = "สแกนเพื่อรับรูป";
                             addDoc(collection(db, "photos"), { url: json.data.url, createdAt: serverTimestamp() }).catch(e=>console.log(e));
                         } else qrStatus.textContent = "อัปโหลดล้มเหลว";
@@ -951,15 +946,45 @@
                 if (printCopies < 6) { printCopies++; printCopiesElem.textContent = printCopies; playBeep(600, 0.05); }
             });
 
-            document.getElementById('download-btn').addEventListener('click', () => { const a = document.createElement('a'); a.download = `SNAP-${Date.now()}.jpg`; a.href = document.getElementById('strip-canvas').toDataURL('image/jpeg', 1.0); a.click(); });
-            
-            document.getElementById('print-btn').addEventListener('click', async () => {
-                const btn = document.getElementById('print-btn');
-                btn.disabled = true; const originalText = btn.textContent; btn.textContent = `กำลังสั่งพิมพ์ (${printCopies} ใบ)...`;
-                for (let i = 0; i < printCopies; i++) { window.print(); await new Promise(resolve => setTimeout(resolve, 800)); }
-                btn.disabled = false; btn.textContent = originalText;
+            // 🌟 ระบบสั่งปรินท์รูปโดยดึงจาก clean-canvas (พื้นขาว 100% ประหยัดหมึก)
+            async function executePrint(btnElement) {
+                const cleanCanvas = document.getElementById('clean-canvas');
+                const printCanvas = document.getElementById('print-canvas');
+                const printCtx = printCanvas.getContext('2d');
+                
+                printCanvas.width = cleanCanvas.width;
+                printCanvas.height = cleanCanvas.height;
+                
+                printCtx.clearRect(0, 0, printCanvas.width, printCanvas.height);
+                printCtx.filter = 'none';
+                printCtx.drawImage(cleanCanvas, 0, 0);
+
+                btnElement.disabled = true; 
+                const originalText = btnElement.textContent; 
+                btnElement.textContent = `กำลังพิมพ์ (${printCopies} ใบ)...`;
+                
+                for (let i = 0; i < printCopies; i++) { 
+                    window.print(); 
+                    await new Promise(resolve => setTimeout(resolve, 800)); 
+                }
+                
+                btnElement.disabled = false; 
+                btnElement.textContent = originalText;
+            }
+
+            // 🌟 ผูกปุ่ม Print ปุ่มเดียวเข้ากับฟังก์ชันพิมพ์
+            document.getElementById('print-btn').addEventListener('click', function() {
+                executePrint(this);
             });
 
+            // 🌟 ปุ่มเลือกเทมเพลตใหม่ (กดย้อนกลับไปหน้าเลือกกรอบ)
+            document.getElementById('change-template-btn').addEventListener('click', () => { 
+                playBeep();
+                document.getElementById('result-overlay').classList.remove('active');
+                switchScreen(2); 
+            });
+
+            // 🌟 ปุ่มถ่ายใหม่ทั้งหมด
             document.getElementById('retake-btn').addEventListener('click', () => { 
                 document.getElementById('result-overlay').classList.remove('active'); 
                 document.getElementById('manual-start-btn').style.display = 'block';
@@ -967,6 +992,7 @@
                 state.isShooting = false;
             });
             
+            // 🌟 ปุ่มเสร็จสิ้น กลับสู่หน้าหลัก
             document.getElementById('home-btn').addEventListener('click', () => { switchScreen(1); });
         });
     </script>
