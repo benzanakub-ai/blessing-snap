@@ -255,11 +255,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-        // 🌟 นำเข้าฟังก์ชัน Storage จาก Firebase 🌟
         import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-storage.js";
         import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-        // 🌟 ใช้ API Key เดิมของตู้เดี่ยว
         const firebaseConfig = {
             apiKey: "AIzaSyA57qyFTexeNyRMTTLUJMNC5Bm24L_K0io",
             authDomain: "blessing-snap.firebaseapp.com",
@@ -272,10 +270,12 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app); // 🌟 เปิดการใช้งาน Storage
+        const storage = getStorage(app); 
         
-        // --- ส่วนการโหลด Config หน้าจอเหมือนเดิม ---
         let kioskConfig = { imgbbApiKey: "", adVideoUrl: "", themes: [], ads: [] };
+        
+        // 🌟 1. ประกาศตัวแปรเก็บเทมเพลตที่ประมวลผลเสร็จแล้วไว้ในหน่วยความจำ
+        const precomputedTemplates = {}; 
 
         document.addEventListener('DOMContentLoaded', () => {
             const state = { 
@@ -412,6 +412,20 @@
                 window.addEventListener(evt, resetIdleTimer); 
             });
 
+            // 🌟 2. ฟังก์ชันวิชามาร: แอบดาวน์โหลดและเจาะรหัสสีเก็บไว้ล่วงหน้า
+            function precomputeAllTemplates(themes) {
+                if (!themes || !themes.length) return;
+                themes.forEach(themeData => {
+                    const url = typeof themeData === 'object' && themeData !== null ? themeData.url : themeData;
+                    if (url && !precomputedTemplates[url]) {
+                        analyzeAndProcessTemplate(url).then(result => {
+                            precomputedTemplates[url] = result;
+                            console.log(`[Precomputed]: ${url}`);
+                        });
+                    }
+                });
+            }
+
             async function loadFirebaseConfig() {
                 try {
                     const snap = await getDoc(doc(db, "config", "settings"));
@@ -425,6 +439,10 @@
                             }
                         }
                         renderDynamicThemes();
+                        
+                        // 🌟 3. สั่งเจาะรหัสสีล่วงหน้าทันทีที่เปิดเครื่อง
+                        precomputeAllTemplates(kioskConfig.themes);
+                        
                         resetIdleTimer(); 
                     }
                 } catch(e) { console.error("โหลด Firebase ไม่สำเร็จ:", e); }
@@ -579,21 +597,30 @@
                 });
             }
 
+            // 🌟 4. แก้ไขปุ่มกด "เลือกกรอบนี้" ให้ดึงข้อมูลที่เตรียมไว้มาใช้ทันที
             document.getElementById('confirm-template-btn').addEventListener('click', async () => { 
                 if (!state.selectedThemeUrl) return alert("กรุณาเลือกเทมเพลตก่อนครับ");
                 playBeep(); 
-                document.getElementById('loading-overlay').classList.add('active');
                 
                 document.getElementById('manual-start-btn').style.display = 'block';
                 document.getElementById('auto-shoot-msg').style.display = 'none';
                 state.isShooting = false;
+
+                let result;
+                // เช็คว่าระบบแอบคำนวณไว้เสร็จหรือยัง ถ้าเสร็จแล้วหยิบมาใช้เลย ไม่ต้องโหลดหน้าจอ
+                if (precomputedTemplates[state.selectedThemeUrl]) {
+                    result = precomputedTemplates[state.selectedThemeUrl];
+                } else {
+                    // ถ้ายังไม่เสร็จ (เช่น เพิ่งกดเปลี่ยนกรอบใหม่จาก Admin) ก็ให้แสดงหน้าโหลดรอ
+                    document.getElementById('loading-overlay').classList.add('active');
+                    result = await analyzeAndProcessTemplate(state.selectedThemeUrl);
+                    document.getElementById('loading-overlay').classList.remove('active');
+                }
                 
-                const result = await analyzeAndProcessTemplate(state.selectedThemeUrl);
                 state.activeLayout = result.layout; 
                 state.processedOverlayCanvas = result.overlayCanvas;
                 state.totalShots = result.layout.length > 0 ? result.layout.length : 1;
                 
-                document.getElementById('loading-overlay').classList.remove('active');
                 switchScreen(3); 
             });
 
