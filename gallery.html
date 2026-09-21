@@ -20,9 +20,9 @@
         .pulse { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; animation: blink 1.5s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        /* 🌟 พื้นที่แสดงรูปภาพ */
+        /* พื้นที่แสดงรูปภาพ */
         .gallery-container { 
-            padding: 50px 30px 80px; /* เผื่อพื้นที่ด้านล่างไว้เยอะหน่อยให้เลื่อนดูใบสุดท้ายได้สบายๆ */
+            padding: 50px 30px 80px; 
             height: calc(100vh - 65px); 
             overflow-y: auto; 
             display: grid; 
@@ -30,12 +30,11 @@
             column-gap: 24px; 
             row-gap: 0px; 
             align-content: start; 
-            scroll-behavior: smooth; /* เลื่อนจอแบบนุ่มนวล */
+            scroll-behavior: smooth; 
         }
         .gallery-container::-webkit-scrollbar { width: 6px; }
         .gallery-container::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
         
-        /* 🌟 ปรับให้การ์ดมุดซ้อนทับกัน และคลิกได้ง่ายๆ */
         .photo-card { 
             width: 100%;
             max-width: 280px; 
@@ -49,11 +48,10 @@
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            margin-top: -50px; /* ซ้อนทับกันแบบน้ำตก */
-            box-shadow: 0 -8px 20px rgba(0,0,0,0.5); /* เปลี่ยนทิศทางเงาให้สมจริงเวลาซ้อนจากล่างขึ้นบน */
+            margin-top: -50px; 
+            box-shadow: 0 -8px 20px rgba(0,0,0,0.5); 
             border: 1px solid var(--border-color);
         }
-        /* ยกเว้นแถวแรกสุด ไม่ต้องโดนดึงขึ้นไป */
         .photo-card:nth-child(1), .photo-card:nth-child(2), .photo-card:nth-child(3), .photo-card:nth-child(4) {
             margin-top: 0;
         }
@@ -62,7 +60,7 @@
             transform: translateY(-8px) scale(1.03); 
             box-shadow: 0 15px 30px rgba(0,0,0,0.8); 
             border-color: #fff; 
-            z-index: 9999 !important; /* จิ้มใบไหน ใบนั้นกระเด้งมาหน้าสุดทันที */
+            z-index: 9999 !important; 
         }
         
         .photo-img { width: 100%; height: 100%; object-fit: cover; }
@@ -81,7 +79,7 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Modal หน้าต่างซูมรูป รองรับ Responsive ทุก Device */
+        /* Modal หน้าต่างซูมรูป */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s ease; backdrop-filter: blur(8px); }
         .modal-overlay.active { opacity: 1; visibility: visible; }
         
@@ -90,34 +88,48 @@
         .modal-image-col { flex: 1.5; background: #000; display: flex; justify-content: center; align-items: center; padding: 20px; position: relative; }
         .modal-image-col img { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; transition: opacity 0.2s ease; }
         
-        /* ปุ่มลูกศรเลื่อนซ้าย-ขวา */
         .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.6); color: white; border: 1px solid rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; transition: 0.2s; z-index: 10; }
         .nav-arrow:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-50%) scale(1.1); }
         #prev-btn { left: 15px; }
         #next-btn { right: 15px; }
 
-        .modal-action-col { flex: 1; padding: 35px 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #151515; position: relative; }
+        .modal-action-col { flex: 1; padding: 35px 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; background: #151515; position: relative; }
         .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: #888; font-size: 2rem; cursor: pointer; transition: 0.2s; }
         .close-btn:hover { color: #fff; transform: scale(1.1); }
         
-        .qr-wrapper { background: #fff; padding: 15px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .qr-wrapper { background: #fff; padding: 15px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 100%; max-width: 220px; }
         #modal-qrcode { width: 160px; height: 160px; }
         .qr-text { color: #000; font-size: 0.9rem; font-weight: 800; margin-top: 12px; text-transform: uppercase; letter-spacing: 1px; text-align: center;}
         
-        .btn-share { background: #0a84ff; color: white; border: none; padding: 16px 28px; font-size: 1rem; font-weight: bold; border-radius: 40px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; width: 100%; justify-content: center; }
-        .btn-share:hover, .btn-share:active { background: #006ee6; transform: scale(1.02); }
+        .btn-action { color: white; border: none; padding: 16px 20px; font-size: 1rem; font-weight: bold; border-radius: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .btn-action:hover, .btn-action:active { transform: scale(1.02); filter: brightness(1.1); }
+        
+        .qty-control-wrapper { background: #222; border: 1px solid #333; border-radius: 16px; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; width: 100%; }
+        .qty-label { font-size: 0.95rem; font-weight: bold; color: #ccc; }
+        .qty-buttons { display: flex; align-items: center; gap: 16px; }
+        .qty-btn { background: #333; color: #fff; border: 1px solid #444; width: 36px; height: 36px; border-radius: 50%; font-size: 1.2rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .qty-btn:active { background: #fff; color: #000; transform: scale(0.92); }
+        #print-copies-count { font-size: 1.3rem; font-weight: 900; min-width: 20px; text-align: center; color: #10b981; }
 
         #empty-state { width: 100%; grid-column: 1 / -1; text-align: center; padding: 100px 20px; color: #666; font-size: 1.2rem; }
         
-        /* Responsive สำหรับมือถือและจอเล็ก */
         @media (max-width: 768px) {
             .gallery-container { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); padding: 25px 15px; column-gap: 15px; }
-            .photo-card:nth-child(3), .photo-card:nth-child(4) { margin-top: -50px; } /* ปรับกฏการยกเว้นแถวแรกในมือถือ */
+            .photo-card:nth-child(3), .photo-card:nth-child(4) { margin-top: -50px; } 
             .modal-content { flex-direction: column; overflow-y: auto; max-height: 95vh; width: 95%; }
             .modal-image-col { padding: 10px; min-height: 40vh; }
             .modal-image-col img { max-height: 40vh; }
             .modal-action-col { padding: 25px 20px; }
             .nav-arrow { width: 35px; height: 35px; font-size: 1.1rem; }
+        }
+
+        /* 🌟 CSS สำหรับการสั่งพิมพ์ (iPad รองรับได้ดีเยี่ยม) 🌟 */
+        @media print {
+            @page { size: A4 portrait; margin: 0mm; }
+            html, body { width: 210mm !important; height: 297mm !important; margin: 0 !important; padding: 0 !important; background: #ffffff !important; overflow: hidden !important; }
+            header, .gallery-container, .modal-overlay { display: none !important; }
+            /* พิมพ์จากแท็ก img จะเสถียรที่สุดบน iPad / iOS */
+            img#print-img-target { display: block !important; visibility: visible !important; width: 210mm !important; height: 297mm !important; max-width: none !important; max-height: none !important; object-fit: contain !important; position: fixed !important; top: 0 !important; left: 0 !important; margin: 0 !important; padding: 0 !important; z-index: 99999; }
         }
     </style>
 </head>
@@ -142,18 +154,37 @@
             </div>
             <div class="modal-action-col">
                 <button class="close-btn" id="close-modal">&times;</button>
+                
                 <div class="qr-wrapper">
                     <div id="modal-qrcode"></div>
                     <div class="qr-text">สแกนเพื่อโหลดรูป</div>
                 </div>
                 
-                <button class="btn-share" id="share-btn">
+                <div class="qty-control-wrapper" id="qty-wrapper-div">
+                    <span class="qty-label">จำนวนพิมพ์ (ใบ)</span>
+                    <div class="qty-buttons">
+                        <button type="button" class="qty-btn" id="qty-minus">-</button>
+                        <span id="print-copies-count">1</span>
+                        <button type="button" class="qty-btn" id="qty-plus">+</button>
+                    </div>
+                </div>
+
+                <button class="btn-action" id="print-btn" style="background: #10b981;">
+                    🖨️ PRINT / สั่งพิมพ์รูปนี้
+                </button>
+
+                <button class="btn-action" id="share-btn" style="background: #0a84ff;">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
                     แชร์ (AirDrop / LINE)
                 </button>
             </div>
         </div>
     </div>
+
+    <!-- Canvas ลับสำหรับกัดสีก่อนพิมพ์ -->
+    <canvas id="print-canvas" style="display: none;"></canvas>
+    <!-- 🌟 Image ลับสำหรับให้ iPad (AirPrint) ดูดไปพิมพ์ได้อย่างเสถียร 🌟 -->
+    <img id="print-img-target" style="display: none;" />
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
@@ -180,6 +211,14 @@
         const shareBtn = document.getElementById('share-btn');
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
+
+        // เช็คว่าเป็นอุปกรณ์ Apple (iOS/iPadOS) หรือไม่
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
+        // ถ้าเป็น iPad ซ่อนปุ่มปรับจำนวน (เพราะ Apple มีให้เลือก Copies ในหน้าต่าง Print อยู่แล้ว)
+        if (isIOS) {
+            document.getElementById('qty-wrapper-div').style.display = 'none';
+        }
 
         let photoList = [];
         let currentIndex = 0;
@@ -208,14 +247,12 @@
                 if (data.url) photoList.push(data);
             });
 
-            // 🌟 1. เรียงลำดับจากเก่าไปใหม่ (รูปล่าสุดจะไปต่อคิวเป็นใบสุดท้าย ขวาล่างสุด)
             photoList.sort((a, b) => {
                 const timeA = a.createdAt ? a.createdAt.toMillis() : Date.now();
                 const timeB = b.createdAt ? b.createdAt.toMillis() : Date.now();
                 return timeA - timeB; 
             });
 
-            // 🌟 2. อัปเดต Z-Index เพิ่มขึ้นเรื่อยๆ (ใบล่าสุดพลังจะเยอะสุด ทับใบเก่าๆ)
             let zIndexCounter = 1;
 
             photoList.forEach((data, index) => {
@@ -237,13 +274,11 @@
                 galleryContainer.appendChild(card);
             });
 
-            // 🌟 3. สไลด์หน้าจอลงมาล่างสุดอัตโนมัติ เพื่อให้ลูกค้าเห็นรูปตัวเองทันที
             setTimeout(() => {
                 if (initialLoad) {
                     galleryContainer.scrollTop = galleryContainer.scrollHeight;
                     initialLoad = false;
                 } else {
-                    // หากมีรูปใหม่มา ให้เลื่อนลงล่างสุดแบบนุ่มนวล
                     galleryContainer.scrollTo({
                         top: galleryContainer.scrollHeight,
                         behavior: 'smooth'
@@ -267,6 +302,10 @@
 
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, { text: currentPhotoUrl, width: 160, height: 160 });
+            
+            // รีเซ็ตจำนวนพิมพ์
+            printCopies = 1;
+            printCopiesElem.textContent = printCopies;
         }
 
         prevBtn.addEventListener('click', (e) => {
@@ -281,7 +320,6 @@
             showModalImage(currentIndex);
         });
 
-        // Swipe สำหรับหน้าจอสัมผัส
         let touchStartX = 0;
         modalImg.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
         modalImg.addEventListener('touchend', (e) => {
@@ -295,6 +333,7 @@
             }
         });
 
+        // ระบบแชร์ที่เข้ากันได้กับ iPad สุดๆ
         shareBtn.addEventListener('click', async () => {
             if (!currentPhotoUrl) return;
             if (navigator.share) {
@@ -320,6 +359,86 @@
         modalOverlay.addEventListener('click', (e) => {
             if (e.target === modalOverlay) modalOverlay.classList.remove('active');
         });
+
+        // ระบบเลือกจำนวนพิมพ์ (สำหรับ PC)
+        let printCopies = 1;
+        const printCopiesElem = document.getElementById('print-copies-count');
+
+        document.getElementById('qty-minus').addEventListener('click', () => {
+            if (printCopies > 1) { printCopies--; printCopiesElem.textContent = printCopies; }
+        });
+
+        document.getElementById('qty-plus').addEventListener('click', () => {
+            if (printCopies < 6) { printCopies++; printCopiesElem.textContent = printCopies; }
+        });
+
+        // 🌟 ฟังก์ชันพิมพ์แบบ AirPrint (iPad) & PC 🌟
+        document.getElementById('print-btn').addEventListener('click', async function() {
+            const btnElement = this;
+            const originalText = btnElement.innerHTML;
+            
+            btnElement.disabled = true; 
+            btnElement.innerHTML = `⏳ กำลังเตรียมรูป...`;
+
+            const img = new Image();
+            img.crossOrigin = "Anonymous"; // รองรับรูปจาก Firebase
+            
+            img.onload = async () => {
+                const printCanvas = document.getElementById('print-canvas');
+                printCanvas.width = img.width;
+                printCanvas.height = img.height;
+                const ctx = printCanvas.getContext('2d');
+                
+                ctx.drawImage(img, 0, 0);
+
+                // กัดสีให้เป็นขาว 100%
+                const imgData = ctx.getImageData(0, 0, printCanvas.width, printCanvas.height);
+                const data = imgData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    let r = data[i], g = data[i+1], b = data[i+2];
+                    if (r >= 245 && g >= 235 && b >= 215) {
+                        data[i] = 255; 
+                        data[i+1] = 255; 
+                        data[i+2] = 255;
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+
+                // แปลงเป็น Image ให้ iPad พิมพ์ได้เสถียร
+                const dataUrl = printCanvas.toDataURL('image/jpeg', 1.0);
+                const printImgTarget = document.getElementById('print-img-target');
+
+                printImgTarget.onload = async () => {
+                    btnElement.innerHTML = `🖨️ กำลังเปิดหน้าต่างพิมพ์...`;
+
+                    if (isIOS) {
+                        // ถ้าเป็น iPad จะเด้ง AirPrint 1 ครั้ง ให้ลูกค้าเลือกจำนวนก๊อปปี้ในหน้าจอตั้งค่าของ Apple
+                        window.print();
+                    } else {
+                        // ถ้าเป็น PC ปกติ จะวนลูปพิมพ์ตามจำนวน
+                        for (let i = 0; i < printCopies; i++) { 
+                            window.print(); 
+                            await new Promise(resolve => setTimeout(resolve, 800)); 
+                        }
+                    }
+                    
+                    btnElement.disabled = false; 
+                    btnElement.innerHTML = originalText;
+                };
+
+                // นำรูปใส่ใน Tag สำหรับพิมพ์
+                printImgTarget.src = dataUrl;
+            };
+
+            img.onerror = () => {
+                alert("เกิดข้อผิดพลาดในการโหลดรูปภาพ ลองรีเฟรชหน้าเว็บอีกครั้งครับ");
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalText;
+            };
+            
+            img.src = currentPhotoUrl;
+        });
+
     </script>
 </body>
 </html>

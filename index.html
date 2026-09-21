@@ -14,7 +14,6 @@
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.4s ease; z-index: 1; pointer-events: none; }
         .screen.active { opacity: 1; visibility: visible; z-index: 10; pointer-events: auto; }
         
-        /* 🌟 ปรับแต่งปุ่มกดให้สวย ใหญ่ และสีสดใส */
         .btn { background: var(--accent-white); color: #000000; border: none; padding: 18px 32px; font-size: 1.1rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; border-radius: 16px; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .btn:hover { transform: scale(1.02); filter: brightness(1.1); }
         .btn:active { transform: scale(0.98); }
@@ -93,18 +92,17 @@
         .retake-icon-btn { position: absolute; top: 12px; right: 12px; background: rgba(0, 0, 0, 0.65); color: #ffffff; border: 2px solid #ffffff; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 10; backdrop-filter: blur(4px); }
         .retake-icon-btn:hover { background: #ffffff; color: #000000; transform: scale(1.15); }
         
-        /* 🌟 ปรับปรุง Layout ฝั่งขวาให้สวยงามและใหญ่ขึ้น */
         .result-actions { display: flex; flex-direction: column; gap: 14px; min-width: 320px; }
-        .qr-box { background: #fff; padding: 24px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; margin-bottom: 4px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
-        #qrcode { width: 160px; height: 160px; }
+        .qr-box { background: #fff; padding: 24px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; margin-bottom: 4px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); min-height: 230px; justify-content: center; }
+        #qrcode { width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; }
         #qr-status { color: #222; font-size: 0.95rem; font-weight: 800; margin-top: 16px; text-transform: uppercase; text-align: center; letter-spacing: 1px;}
         
-        .qty-control-wrapper { background: #1e1e1e; border: 1px solid var(--border-color); border-radius: 16px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
-        .qty-label { font-size: 1.05rem; font-weight: bold; color: #ccc; }
+        .qty-control-wrapper { background: #18181b; border: 1px solid #27272a; border-radius: 16px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .qty-label { font-size: 1.05rem; font-weight: bold; color: #e4e4e7; }
         .qty-buttons { display: flex; align-items: center; gap: 16px; }
-        .qty-btn { background: #2a2a2a; color: #fff; border: 1px solid #444; width: 44px; height: 44px; border-radius: 50%; font-size: 1.5rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .qty-btn { background: #27272a; color: #fff; border: 1px solid #3f3f46; width: 44px; height: 44px; border-radius: 50%; font-size: 1.5rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .qty-btn:active { background: #fff; color: #000; transform: scale(0.92); }
-        #print-copies-count { font-size: 1.5rem; font-weight: 900; min-width: 30px; text-align: center; color: #4ade80; }
+        #print-copies-count { font-size: 1.5rem; font-weight: 900; min-width: 30px; text-align: center; color: #10b981; }
 
         #loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: 0.3s; }
         #loading-overlay.active { opacity: 1; visibility: visible; }
@@ -143,7 +141,7 @@
     <section id="screen-2" class="screen">
         <div class="section-header">
             <div class="section-title">CHOOSE TEMPLATE</div>
-            <div class="section-desc">ระบบจะดึงภาพตามกรอบสีที่ตั้งไว้ใน Canva โดยอัตโนมัติ</div>
+            <div class="section-desc">ระบบจะดึงภาพตามกรอบสีที่ตั้งไว้โดยอัตโนมัติ</div>
         </div>
         <div class="carousel-wrapper">
             <button class="nav-btn" id="prev-btn">&lt;</button>
@@ -226,22 +224,18 @@
                         </div>
                     </div>
 
-                    <!-- 🌟 1. ปุ่ม PRINT ปุ่มเดียวชัดเจน โทนเขียวสดใส Vibrant/Neon -->
                     <button class="btn" id="print-btn" style="background: #10b981; color: white; padding: 18px; font-size: 1.15rem;">
                         🖨️ PRINT / สั่งพิมพ์
                     </button>
 
-                    <!-- 🌟 2. ปุ่ม CHANGE TEMPLATE โทนฟ้าสดใส -->
                     <button class="btn" id="change-template-btn" style="background: #0284c7; color: white; font-size: 0.95rem;">
                         CHANGE TEMPLATE / เลือกกรอบใหม่
                     </button>
                     
-                    <!-- 🌟 3. ปุ่ม RETAKE ALL โทนส้มสดใส -->
                     <button class="btn" id="retake-btn" style="background: #ea580c; color: white; font-size: 0.95rem;">
                         RETAKE ALL / ถ่ายใหม่ทั้งหมด
                     </button>
                     
-                    <!-- 🌟 4. ปุ่ม FINISH โทนขอบแดงสดใส -->
                     <button class="btn btn-secondary" id="home-btn" style="border-color: #f43f5e; color: #f43f5e; font-size: 0.95rem;">
                         FINISH / กลับหน้าหลัก
                     </button>
@@ -257,13 +251,15 @@
     </div>
 
     <canvas id="capture-canvas" style="display: none;"></canvas>
-    <!-- 🌟 Canvas สำหรับเก็บภาพต้นฉบับพื้นหลังขาว 100% เอาไว้สั่งพิมพ์ประหยัดหมึก -->
     <canvas id="clean-canvas" style="display: none;"></canvas>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        // 🌟 นำเข้าฟังก์ชัน Storage จาก Firebase 🌟
+        import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-storage.js";
         import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
+        // 🌟 ใช้ API Key เดิมของตู้เดี่ยว
         const firebaseConfig = {
             apiKey: "AIzaSyA57qyFTexeNyRMTTLUJMNC5Bm24L_K0io",
             authDomain: "blessing-snap.firebaseapp.com",
@@ -276,7 +272,9 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app); // 🌟 เปิดการใช้งาน Storage
         
+        // --- ส่วนการโหลด Config หน้าจอเหมือนเดิม ---
         let kioskConfig = { imgbbApiKey: "", adVideoUrl: "", themes: [], ads: [] };
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -393,7 +391,6 @@
 
             function resetIdleTimer(e) {
                 clearTimeout(idleTimeout);
-                
                 if (isAdPlaying) {
                     hideAds(); 
                     switchScreen(1); 
@@ -401,7 +398,6 @@
                         e.preventDefault(); 
                     }
                 }
-
                 idleTimeout = setTimeout(() => {
                     if (state.currentScreen === 1) {
                         showAds();
@@ -784,7 +780,6 @@
                 hiddenCanvas.width = webcamElement.videoWidth || 1920; 
                 hiddenCanvas.height = webcamElement.videoHeight || 1080;
                 
-                // 🌟 บันทึกภาพโดยไม่กลับซ้าย-ขวา เพื่อให้ตัวอักษรบนเสื้อและโลโก้อ่านออกปกติ
                 ctx.drawImage(webcamElement, 0, 0, hiddenCanvas.width, hiddenCanvas.height); 
                 
                 const imgData = ctx.getImageData(0, 0, hiddenCanvas.width, hiddenCanvas.height); 
@@ -829,7 +824,7 @@
                 
                 const photos = state.capturedPhotos; if (photos.length < state.totalShots) return;
                 const stripCanvas = document.getElementById('strip-canvas');
-                const cleanCanvas = document.getElementById('clean-canvas'); // 🌟 ใช้สำหรับภาพพื้นหลังขาวตอนปรินท์
+                const cleanCanvas = document.getElementById('clean-canvas'); 
                 
                 const ctx = stripCanvas.getContext('2d'); 
                 const cleanCtx = cleanCanvas.getContext('2d');
@@ -874,7 +869,6 @@
                             sw = img.width; sh = img.width / targetRatio; sx = 0; sy = (img.height - sh) / 2; 
                         }
                         
-                        // วาดรูปลงบนทั้ง 2 แผ่น
                         ctx.drawImage(img, sx, sy, sw, sh, f.x, f.y, f.w, f.h);
                         cleanCtx.drawImage(img, sx, sy, sw, sh, f.x, f.y, f.w, f.h);
 
@@ -901,7 +895,6 @@
                     cleanCtx.drawImage(state.processedOverlayCanvas, 0, 0, width, height);
                 }
 
-                // 🌟 ย้อมสีวินเทจเฉพาะแผ่นที่จะโชว์ให้แสกน QR โหลดเข้ามือถือเท่านั้น
                 ctx.save();
                 ctx.globalCompositeOperation = 'multiply';
                 ctx.fillStyle = '#fff6e3';
@@ -911,28 +904,53 @@
                 showResultAndUpload(stripCanvas);
             }
 
-            function showResultAndUpload(stripCanvas) {
-                document.getElementById('result-overlay').classList.add('active'); state.isShooting = false; 
+            // 🌟 1. ฟังก์ชันอัปโหลดรูปตรงเข้า Firebase Storage ทิ้ง ImgBB ถาวร 🌟
+            async function showResultAndUpload(stripCanvas) {
+                document.getElementById('result-overlay').classList.add('active'); 
+                state.isShooting = false; 
 
-                const qrContainer = document.getElementById('qrcode'); const qrStatus = document.getElementById('qr-status');
-                qrContainer.innerHTML = ""; qrStatus.textContent = "กำลังอัปโหลด...";
-
-                const apiKey = kioskConfig?.imgbbApiKey;
-                if (!apiKey) { qrStatus.textContent = "ยังไม่ได้ใส่ API Key"; return; }
+                const qrContainer = document.getElementById('qrcode'); 
+                const qrStatus = document.getElementById('qr-status');
                 
-                const base64Data = stripCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-                const formData = new FormData(); formData.append("image", base64Data);
+                qrContainer.innerHTML = ""; 
+                qrStatus.textContent = "กำลังสร้าง QR Code...";
 
-                fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: formData })
-                    .then(res => res.json())
-                    .then(json => {
-                        if (json.success) {
-                            // ปรับขนาด QR ให้ใหญ่ขึ้นตามขนาดกล่องที่ใหญ่ขึ้น
-                            new QRCode(qrContainer, { text: json.data.url, width: 160, height: 160 });
-                            qrStatus.textContent = "สแกนเพื่อรับรูป";
-                            addDoc(collection(db, "photos"), { url: json.data.url, createdAt: serverTimestamp() }).catch(e=>console.log(e));
-                        } else qrStatus.textContent = "อัปโหลดล้มเหลว";
-                    }).catch(err => { qrStatus.textContent = "เกิดข้อผิดพลาด"; });
+                try {
+                    // แปลง Canvas เป็น Data URL (base64 string)
+                    const dataUrl = stripCanvas.toDataURL('image/jpeg', 0.85);
+
+                    // สร้างชื่อไฟล์แบบไม่ซ้ำกันด้วย Timestamp และ Random Number
+                    const fileName = `photobooth_${Date.now()}_${Math.floor(Math.random() * 10000)}.jpg`;
+                    
+                    // สร้าง Reference ไปที่ Firebase Storage ของเรา (เก็บในโฟลเดอร์ photos)
+                    const storageReference = ref(storage, 'photos/' + fileName);
+
+                    // อัปโหลดข้อมูล String (Base64) ขึ้น Firebase Storage
+                    await uploadString(storageReference, dataUrl, 'data_url');
+
+                    // ดึง Download URL ออกมาเพื่อใช้สร้าง QR Code และเซฟลงฐานข้อมูล
+                    const downloadUrl = await getDownloadURL(storageReference);
+
+                    if (downloadUrl) {
+                        qrContainer.innerHTML = "";
+                        new QRCode(qrContainer, { 
+                            text: downloadUrl, 
+                            width: 160, 
+                            height: 160 
+                        });
+                        qrStatus.textContent = "สแกนเพื่อรับรูป";
+
+                        // เซฟเก็บประวัติลง Firestore
+                        await addDoc(collection(db, "photos"), { 
+                            url: downloadUrl, 
+                            thumb_url: downloadUrl, // ในที่นี้ให้เหมือนกันไปก่อนได้ครับ
+                            createdAt: serverTimestamp() 
+                        });
+                    }
+                } catch (err) { 
+                    console.error("Upload Error:", err);
+                    qrStatus.textContent = "เกิดข้อผิดพลาดในการอัปโหลด"; 
+                }
             }
 
             let printCopies = 1;
@@ -946,7 +964,6 @@
                 if (printCopies < 6) { printCopies++; printCopiesElem.textContent = printCopies; playBeep(600, 0.05); }
             });
 
-            // 🌟 ระบบสั่งปรินท์รูปโดยดึงจาก clean-canvas (พื้นขาว 100% ประหยัดหมึก)
             async function executePrint(btnElement) {
                 const cleanCanvas = document.getElementById('clean-canvas');
                 const printCanvas = document.getElementById('print-canvas');
@@ -972,19 +989,16 @@
                 btnElement.textContent = originalText;
             }
 
-            // 🌟 ผูกปุ่ม Print ปุ่มเดียวเข้ากับฟังก์ชันพิมพ์
             document.getElementById('print-btn').addEventListener('click', function() {
                 executePrint(this);
             });
 
-            // 🌟 ปุ่มเลือกเทมเพลตใหม่ (กดย้อนกลับไปหน้าเลือกกรอบ)
             document.getElementById('change-template-btn').addEventListener('click', () => { 
                 playBeep();
                 document.getElementById('result-overlay').classList.remove('active');
                 switchScreen(2); 
             });
 
-            // 🌟 ปุ่มถ่ายใหม่ทั้งหมด
             document.getElementById('retake-btn').addEventListener('click', () => { 
                 document.getElementById('result-overlay').classList.remove('active'); 
                 document.getElementById('manual-start-btn').style.display = 'block';
@@ -992,7 +1006,6 @@
                 state.isShooting = false;
             });
             
-            // 🌟 ปุ่มเสร็จสิ้น กลับสู่หน้าหลัก
             document.getElementById('home-btn').addEventListener('click', () => { switchScreen(1); });
         });
     </script>

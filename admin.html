@@ -5,49 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BLESSING SNAP - Admin Control</title>
   
-  <!-- 🌟 เพิ่มไลบรารีสำหรับทำลากวาง (Drag and Drop) -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
   <style>
-    .gallery-card {
-      display: flex;
-      flex-direction: column;
-      height: 260px;
-    }
-    .gallery-img-box {
-      flex: 1;
-      background-color: #000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px;
-      overflow: hidden;
-      position: relative;
-    }
-    .gallery-img-box img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      position: absolute;
-    }
-    .drag-over {
-      border-color: #0ea5e9 !important;
-      transform: scale(1.02);
-    }
+    .gallery-card { display: flex; flex-direction: column; height: 260px; }
+    .gallery-img-box { flex: 1; background-color: #000; display: flex; align-items: center; justify-content: center; padding: 4px; overflow: hidden; position: relative; }
+    .gallery-img-box img { width: 100%; height: 100%; object-fit: contain; position: absolute; }
+    .drag-over { border-color: #0ea5e9 !important; transform: scale(1.02); }
   </style>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { 
-      getFirestore, doc, getDoc, setDoc, collection, query, orderBy, onSnapshot, writeBatch, where 
-    } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, query, orderBy, onSnapshot, writeBatch, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    // 🌟 1. นำเข้า Firebase Storage 🌟
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-storage.js";
 
+    // 🌟 ใช้ API Key เดิมของตู้เดี่ยว
     const firebaseConfig = {
       apiKey: "AIzaSyA57qyFTexeNyRMTTLUJMNC5Bm24L_K0io",
       authDomain: "blessing-snap.firebaseapp.com",
@@ -60,10 +37,11 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const storage = getStorage(app); // 🌟 เปิดการใช้งาน Storage
     const configDocRef = doc(db, "config", "settings");
 
     const DEFAULT_PIN = "8888";
-    let currentSettings = { imgbbApiKey: "", adVideoUrl: "", themes: [], ads: [] };
+    let currentSettings = { adVideoUrl: "", themes: [], ads: [] };
     
     let currentPhotos = []; 
     let selectedPhotoIds = new Set(); 
@@ -111,12 +89,12 @@
       try {
         const docSnap = await getDoc(configDocRef);
         if (docSnap.exists()) {
-          currentSettings = docSnap.data();
-          document.getElementById('imgbbApiKey').value = currentSettings.imgbbApiKey || "";
-          document.getElementById('adVideoUrl').value = currentSettings.adVideoUrl || "";
+          const data = docSnap.data();
+          currentSettings.adVideoUrl = data.adVideoUrl || "";
+          document.getElementById('adVideoUrl').value = currentSettings.adVideoUrl;
           
-          if (!currentSettings.themes) currentSettings.themes = [];
-          if (!currentSettings.ads) currentSettings.ads = []; 
+          currentSettings.themes = data.themes || [];
+          currentSettings.ads = data.ads || []; 
           
           currentSettings.themes = currentSettings.themes.map((theme, index) => {
             return typeof theme === 'string' ? { url: theme, name: `Template ${index + 1}` } : theme;
@@ -132,19 +110,19 @@
       const btn = document.getElementById('save-basic-btn');
       const status = document.getElementById('basic-status');
       btn.disabled = true; status.textContent = "กำลังบันทึก...";
-      currentSettings.imgbbApiKey = document.getElementById('imgbbApiKey').value.trim();
+      
       currentSettings.adVideoUrl = document.getElementById('adVideoUrl').value.trim();
+      
       try {
-        await setDoc(configDocRef, currentSettings, { merge: true });
+        await setDoc(configDocRef, { adVideoUrl: currentSettings.adVideoUrl }, { merge: true });
         status.textContent = "✓ บันทึกเรียบร้อย"; status.className = "text-green-400 text-xs mt-2";
       } catch (err) { status.textContent = "❌ " + err.message; status.className = "text-red-400 text-xs mt-2"; }
       setTimeout(() => status.textContent = "", 3000);
       btn.disabled = false;
     };
 
+    // 🌟 2. เปลี่ยนให้อัปโหลด Theme ตรงเข้า Firebase Storage 🌟
     window.uploadTheme = async () => {
-      const apiKey = currentSettings.imgbbApiKey || document.getElementById('imgbbApiKey').value.trim();
-      if (!apiKey) return alert("กรุณาบันทึก ImgBB API Key ก่อนครับ");
       const fileInput = document.getElementById('themeFileInput');
       if (!fileInput.files[0]) return alert("กรุณาเลือกไฟล์ภาพ .png ก่อนครับ");
 
@@ -153,29 +131,36 @@
 
       const status = document.getElementById('upload-status');
       status.textContent = "กำลังอัปโหลด..."; status.className = "text-yellow-400 text-xs mt-2";
-      const formData = new FormData(); formData.append("image", fileInput.files[0]);
 
       try {
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: formData });
-        const data = await res.json();
-        if (data.success) {
-          currentSettings.themes.push({ url: data.data.url, name: themeName });
-          await setDoc(configDocRef, currentSettings, { merge: true });
-          status.textContent = "✓ อัปโหลดสำเร็จ!"; status.className = "text-green-400 text-xs mt-2";
-          fileInput.value = ""; 
-          themeNameInput.value = ""; 
-          renderThemes();
-        } else {
-          status.textContent = "❌ " + data.error.message; status.className = "text-red-400 text-xs mt-2";
-        }
-      } catch (err) { status.textContent = "❌ ผิดพลาดในการอัปโหลด"; status.className = "text-red-400 text-xs mt-2"; }
+        const file = fileInput.files[0];
+        // สร้างชื่อไฟล์ไม่ให้ซ้ำกัน และเก็บในโฟลเดอร์ themes/
+        const fileName = `themes/theme_${Date.now()}_${Math.floor(Math.random() * 1000)}.png`;
+        const storageReference = ref(storage, fileName);
+
+        // อัปโหลดไฟล์ขึ้น Storage
+        await uploadBytes(storageReference, file);
+        // ดึง URL กลับมาใช้งาน
+        const downloadUrl = await getDownloadURL(storageReference);
+
+        currentSettings.themes.push({ url: downloadUrl, name: themeName });
+        await setDoc(configDocRef, { themes: currentSettings.themes }, { merge: true });
+        
+        status.textContent = "✓ อัปโหลดสำเร็จ!"; status.className = "text-green-400 text-xs mt-2";
+        fileInput.value = ""; 
+        themeNameInput.value = ""; 
+        renderThemes();
+      } catch (err) { 
+        console.error("Upload Theme Error:", err);
+        status.textContent = "❌ ผิดพลาดในการอัปโหลด"; status.className = "text-red-400 text-xs mt-2"; 
+      }
       setTimeout(() => status.textContent = "", 4000);
     };
 
     window.updateThemeName = async (index, newName) => {
       if (newName.trim() === "") newName = `Template ${index + 1}`;
       currentSettings.themes[index].name = newName;
-      await setDoc(configDocRef, currentSettings, { merge: true });
+      await setDoc(configDocRef, { themes: currentSettings.themes }, { merge: true });
     };
 
     function renderThemes() {
@@ -214,10 +199,7 @@
       e.dataTransfer.effectAllowed = 'move';
     };
 
-    window.handleDragOver = (e) => {
-      e.preventDefault(); 
-      e.dataTransfer.dropEffect = 'move';
-    };
+    window.handleDragOver = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
 
     window.handleDragEnter = (e) => {
       e.preventDefault();
@@ -242,7 +224,7 @@
         currentSettings.themes.splice(draggedThemeIndex, 1); 
         currentSettings.themes.splice(dropIndex, 0, draggedItem); 
         renderThemes(); 
-        await setDoc(configDocRef, currentSettings, { merge: true });
+        await setDoc(configDocRef, { themes: currentSettings.themes }, { merge: true });
       }
       draggedThemeIndex = null;
       return false;
@@ -257,7 +239,7 @@
     window.deleteTheme = async (index) => {
       if (confirm("ต้องการลบธีมนี้ใช่หรือไม่?")) {
         currentSettings.themes.splice(index, 1);
-        await setDoc(configDocRef, currentSettings, { merge: true });
+        await setDoc(configDocRef, { themes: currentSettings.themes }, { merge: true });
         renderThemes();
       }
     };
@@ -349,7 +331,8 @@
             <span class="text-[10px] text-zinc-400 pointer-events-none">${dateString} <span class="text-zinc-600 px-1">|</span> <span class="text-sky-400 font-mono">${timeString}</span></span>
             
             <div class="flex items-center gap-1.5">
-               <button onclick="printSinglePhoto(event, '${imgUrl}')" title="พิมพ์รูปนี้" class="w-7 h-7 flex items-center justify-center bg-zinc-800 hover:bg-emerald-600 text-zinc-300 hover:text-white rounded border border-zinc-700 hover:border-emerald-500 transition">
+               <!-- สั่งปรินต์วิชามารกัดสี -->
+               <button onclick="printSinglePhoto(event, '${imgUrl}')" title="พิมพ์รูปนี้ (กัดสีประหยัดหมึก)" class="w-7 h-7 flex items-center justify-center bg-zinc-800 hover:bg-emerald-600 text-zinc-300 hover:text-white rounded border border-zinc-700 hover:border-emerald-500 transition">
                  <i class="fa-solid fa-print text-[10px]"></i>
                </button>
                <button onclick="downloadSingleFile(event, '${imgUrl}', '${photo.id}')" title="ดาวน์โหลดเป็นไฟล์ภาพ" class="w-7 h-7 flex items-center justify-center bg-zinc-800 hover:bg-sky-600 text-zinc-300 hover:text-white rounded border border-zinc-700 hover:border-sky-500 transition">
@@ -385,7 +368,7 @@
       }
     };
 
-    // 🌟 ระบบ "วิชามารกัดสี (Pixel Bleaching)" อัปเดตใหม่ 🌟
+    // ระบบวิชามารกัดสี (Pixel Bleaching)
     window.printSinglePhoto = (event, url) => {
       event.stopPropagation();
       const btn = event.currentTarget;
@@ -394,31 +377,25 @@
       btn.disabled = true;
 
       const img = new Image();
-      img.crossOrigin = "Anonymous"; // จำเป็นสำหรับเปิดให้ Canvas แก้ไขภาพได้
+      img.crossOrigin = "Anonymous"; 
       img.onload = () => {
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
 
-        // วาดภาพต้นฉบับลงไป
         ctx.drawImage(img, 0, 0);
 
-        // ดึงข้อมูลพิกเซลมาประมวลผล
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imgData.data;
 
-        // 🌟 กัดสีเฉพาะโทนเหลืองครีม (#fff6e3) แบบบีบช่วงสีให้แคบที่สุด 🌟
-        // เพื่อป้องกันไม่ให้ไปกัดสีหน้าคน หรือเสื้อผ้าสีอ่อน
         for (let i = 0; i < data.length; i += 4) {
             let r = data[i];
             let g = data[i+1];
             let b = data[i+2];
 
-            // ตรวจจับเฉพาะสีที่มีความสว่างสูงมาก และอมเหลืองนิดๆ 
-            // (R>245, G>235, B>215)
             if (r >= 245 && g >= 235 && b >= 215) {
-                data[i] = 255;     // ตบให้เป็นสีขาวจั๊วะ 100%
+                data[i] = 255;
                 data[i+1] = 255;
                 data[i+2] = 255;
             }
@@ -451,7 +428,7 @@
         btn.disabled = false;
       };
       
-      img.src = url; // ดึงภาพจาก URL เดิม
+      img.src = url; 
     };
 
     window.toggleSelectPhoto = (id) => {
@@ -562,9 +539,7 @@
             adList.appendChild(li);
         });
 
-        if (window.adSortableInstance) {
-            window.adSortableInstance.destroy();
-        }
+        if (window.adSortableInstance) { window.adSortableInstance.destroy(); }
         window.adSortableInstance = new Sortable(adList, {
             animation: 150,
             ghostClass: 'opacity-50',
@@ -583,9 +558,8 @@
         }
     };
 
+    // 🌟 3. เปลี่ยนให้อัปโหลด Ad ตรงเข้า Firebase Storage 🌟
     window.uploadAd = async () => {
-        const apiKey = currentSettings.imgbbApiKey || document.getElementById('imgbbApiKey').value.trim();
-        if (!apiKey) return alert("กรุณาบันทึก ImgBB API Key ในช่อง SYSTEM CONFIG ก่อนครับ");
         const fileInput = document.getElementById('ad-upload-input');
         if (!fileInput.files[0]) return alert("กรุณาเลือกไฟล์ภาพโฆษณาก่อนครับ");
 
@@ -597,23 +571,22 @@
         btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> กำลังอัปโหลด...`;
         status.textContent = "";
 
-        const formData = new FormData(); 
-        formData.append("image", fileInput.files[0]);
-
         try {
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, { method: "POST", body: formData });
-            const data = await res.json();
-            if (data.success) {
-                currentAds.push(data.data.url);
-                window.renderAdList(currentAds);
-                fileInput.value = ""; 
-                status.textContent = "อัปโหลดสำเร็จ! อย่าลืมกดบันทึกนะครับ"; 
-                status.className = "text-green-400 text-xs mt-2 text-center";
-            } else {
-                status.textContent = "❌ " + data.error.message; 
-                status.className = "text-red-400 text-xs mt-2 text-center";
-            }
+            const file = fileInput.files[0];
+            // สร้างชื่อไฟล์โฆษณาไม่ให้ซ้ำกัน
+            const fileName = `ads/ad_${Date.now()}_${Math.floor(Math.random() * 1000)}.${file.name.split('.').pop()}`;
+            const storageReference = ref(storage, fileName);
+
+            await uploadBytes(storageReference, file);
+            const downloadUrl = await getDownloadURL(storageReference);
+
+            currentAds.push(downloadUrl);
+            window.renderAdList(currentAds);
+            fileInput.value = ""; 
+            status.textContent = "อัปโหลดสำเร็จ! อย่าลืมกดบันทึกนะครับ"; 
+            status.className = "text-green-400 text-xs mt-2 text-center";
         } catch (err) { 
+            console.error("Upload Ad Error:", err);
             status.textContent = "❌ ผิดพลาดในการอัปโหลด"; 
             status.className = "text-red-400 text-xs mt-2 text-center"; 
         }
@@ -630,7 +603,7 @@
 
         try {
             currentSettings.ads = currentAds;
-            await setDoc(configDocRef, currentSettings, { merge: true });
+            await setDoc(configDocRef, { ads: currentSettings.ads }, { merge: true });
             alert('บันทึกลำดับโฆษณาเรียบร้อยแล้ว!');
         } catch(e) {
             console.error("Error saving ads:", e); 
@@ -675,14 +648,11 @@
     <main class="max-w-7xl mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
       
       <div class="lg:col-span-1 space-y-6">
+        <!-- 🌟 ลบช่องกรอก API Key ของ ImgBB ออกไปแล้วครับ -->
         <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl space-y-4 shadow-lg">
           <h2 class="font-bold text-sm tracking-wide flex items-center gap-2 border-b border-zinc-800 pb-2">
             <i class="fa-solid fa-gear text-sky-400"></i> SYSTEM CONFIG
           </h2>
-          <div class="space-y-1">
-            <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">ImgBB API Key</label>
-            <input type="text" id="imgbbApiKey" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-sm text-white outline-none focus:border-sky-500">
-          </div>
           <div class="space-y-1">
             <label class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Video Ad URL</label>
             <input type="url" id="adVideoUrl" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-sm text-white outline-none focus:border-sky-500">
