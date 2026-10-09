@@ -119,27 +119,39 @@
             document.getElementById('error').style.display = 'flex';
         }
 
-        // ฟังก์ชันช่วยดาวน์โหลดออกแบบมาให้โหลดลงมือถือได้ง่ายสุด
+        // ฟังก์ชันช่วยดาวน์โหลด บังคับให้โหลดลงเครื่องตรงๆ
         window.downloadImage = async (type) => {
             if(!photoData) return;
             const targetUrl = type === 'color' ? photoData.url : photoData.bw_url;
+            // ตั้งชื่อไฟล์ให้ชัดเจน เพื่อให้ระบบมองเป็นไฟล์รูป
             const fileName = `BlessingSnap_${type}_${Date.now()}.jpg`;
 
             try {
+                // เปลี่ยนปุ่มเป็นสถานะกำลังโหลด (ถ้าต้องการ)
                 // ดึงรูปมาเป็นไฟล์ Blob เพื่อบังคับให้บราวเซอร์ดาวน์โหลด (ไม่ใช่เปิดแท็บใหม่)
                 const response = await fetch(targetUrl);
                 const blob = await response.blob();
+                
+                // สร้าง URL ชั่วคราวจากไฟล์รูป
                 const blobUrl = window.URL.createObjectURL(blob);
                 
+                // สร้างลิงก์จำลอง
                 const link = document.createElement('a');
                 link.href = blobUrl;
-                link.download = fileName;
+                // แอตทริบิวต์ download เป็นตัวสั่งให้เบราว์เซอร์ "เซฟลงเครื่อง" ไม่ใช่ "เปิดหน้าใหม่"
+                link.download = fileName; 
+                
+                // จำลองการคลิกเพื่อเริ่มดาวน์โหลด
                 document.body.appendChild(link);
                 link.click();
+                
+                // คืนพื้นที่หน่วยความจำ
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(blobUrl);
+                
             } catch(e) {
-                // เผื่อมือถือรุ่นเก่าบางรุ่น ไม่รองรับ Fetch Blob ให้ใช้เปิดแท็บใหม่แทน
+                console.error("Download Error: ", e);
+                // เผื่อมือถือรุ่นเก่าบางรุ่น ไม่รองรับ ให้ใช้วิธีเปิดแท็บใหม่แทน
                 window.open(targetUrl, '_blank');
             }
         };
