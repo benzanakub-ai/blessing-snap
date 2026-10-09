@@ -37,11 +37,11 @@
             แล้วเลือก <b>"เปิดด้วยเบราว์เซอร์เริ่มต้น"</b> เพื่อบันทึกรูปภาพครับ
         </div>
 
-        <!-- ป้ายแจ้งเตือนสำหรับ iPhone -->
+        <!-- ป้ายแจ้งเตือนสำหรับ iPhone (แก้ Wording แล้ว) -->
         <div id="ios-warning" class="hidden w-full bg-sky-900/40 border border-sky-700/50 text-sky-300 text-[13.5px] px-4 py-3 rounded-xl mb-4 text-center shadow-lg leading-relaxed">
             <i class="fa-brands fa-apple text-lg mb-1 block text-white"></i>
             <b>สำหรับผู้ใช้ iPhone (iOS)</b><br>
-            กรุณาใช้นิ้ว <b>"แตะค้างไว้ที่รูปภาพ"</b> <br>แล้วเลือก <b>"บันทึกรูปภาพ" (Save Image)</b> <br>รูปภาพถึงจะเข้าไปอยู่ในแอป Photos ครับ
+            กรุณาใช้นิ้ว <b>"แตะค้างไว้ที่รูปภาพ"</b> <br>แล้วเลือก <b>"Save to Photos" (บันทึกไปยังแอปรูปภาพ)</b> <br>รูปภาพถึงจะเข้าไปอยู่ในแอป Photos ครับ
         </div>
 
         <!-- Photos Container -->
@@ -149,9 +149,9 @@
             if(!photoData) return;
             const targetUrl = type === 'color' ? photoData.url : photoData.bw_url;
 
-            // ถ้าเป็น iPhone พอกดปุ่มจะเด้ง Alert บอกให้กดค้าง
+            // ถ้าเป็น iPhone พอกดปุ่มจะเด้ง Alert บอกให้กดค้าง (แก้ Wording แล้ว)
             if (isIOS) {
-                alert("📱 วิธีบันทึกลงแอป Photos:\nกรุณาใช้นิ้วแตะ 'ค้างไว้ที่รูปภาพ' จากนั้นเลือกเมนู 'บันทึกรูปภาพ' (Save Image) ครับ");
+                alert("📱 วิธีบันทึกลงแอป Photos:\nกรุณาใช้นิ้วแตะ 'ค้างไว้ที่รูปภาพ' จากนั้นเลือกเมนู 'Save to Photos' (บันทึกไปยังแอปรูปภาพ) ครับ");
                 return;
             }
 
