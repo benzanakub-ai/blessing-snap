@@ -29,12 +29,19 @@
             <p class="text-xs text-zinc-500 mt-2">ลิงก์อาจหมดอายุ หรือถูกลบออกจากระบบแล้ว</p>
         </div>
 
-        <!-- 🌟 ป้ายแจ้งเตือนเฉพาะตอนเปิดในแอป LINE/FB 🌟 -->
+        <!-- ป้ายแจ้งเตือน In-App Browser (LINE/FB) -->
         <div id="line-warning" class="hidden w-full bg-red-900/80 border border-red-500 text-white p-3.5 rounded-xl text-sm mb-2 text-center shadow-lg leading-relaxed">
             <i class="fa-solid fa-triangle-exclamation text-lg text-red-300 mb-1 block"></i>
             คุณกำลังเปิดผ่านแอปพลิเคชันที่บล็อกการโหลดรูป<br>
             กรุณากดปุ่ม <b><i class="fa-solid fa-ellipsis-vertical mx-1"></i> (3 จุดมุมขวาบน)</b><br>
             แล้วเลือก <b>"เปิดด้วยเบราว์เซอร์เริ่มต้น"</b> เพื่อบันทึกรูปภาพครับ
+        </div>
+
+        <!-- ป้ายแจ้งเตือนสำหรับ iPhone -->
+        <div id="ios-warning" class="hidden w-full bg-sky-900/40 border border-sky-700/50 text-sky-300 text-[13.5px] px-4 py-3 rounded-xl mb-4 text-center shadow-lg leading-relaxed">
+            <i class="fa-brands fa-apple text-lg mb-1 block text-white"></i>
+            <b>สำหรับผู้ใช้ iPhone (iOS)</b><br>
+            กรุณาใช้นิ้ว <b>"แตะค้างไว้ที่รูปภาพ"</b> <br>แล้วเลือก <b>"บันทึกรูปภาพ" (Save Image)</b> <br>รูปภาพถึงจะเข้าไปอยู่ในแอป Photos ครับ
         </div>
 
         <!-- Photos Container -->
@@ -49,8 +56,9 @@
                     <div class="w-full bg-black rounded-lg overflow-hidden border border-zinc-700 mb-4 flex justify-center">
                         <img id="img-color" src="" class="w-full h-auto object-contain max-h-[60vh] pointer-events-auto" style="-webkit-touch-callout: default;">
                     </div>
-                    <button onclick="downloadImage('color')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-lg active:scale-95">
-                        <i class="fa-solid fa-download"></i> บันทึกรูปภาพสี
+                    <!-- ปุ่ม Color -->
+                    <button id="btn-color" onclick="downloadImage('color')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-lg active:scale-95">
+                        <i class="fa-solid fa-download"></i> <span id="text-btn-color">บันทึกรูปภาพสี</span>
                     </button>
                 </div>
 
@@ -63,8 +71,9 @@
                     <div class="w-full bg-black rounded-lg overflow-hidden border border-zinc-700 mb-4 flex justify-center">
                         <img id="img-bw" src="" class="w-full h-auto object-contain max-h-[60vh] pointer-events-auto" style="-webkit-touch-callout: default;">
                     </div>
-                    <button onclick="downloadImage('bw')" class="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-lg active:scale-95 border border-zinc-600">
-                        <i class="fa-solid fa-download"></i> บันทึกรูปภาพขาวดำ
+                    <!-- ปุ่ม B&W -->
+                    <button id="btn-bw" onclick="downloadImage('bw')" class="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-lg active:scale-95 border border-zinc-600">
+                        <i class="fa-solid fa-download"></i> <span id="text-btn-bw">บันทึกรูปภาพขาวดำ</span>
                     </button>
                 </div>
             </div>
@@ -91,13 +100,26 @@
         const urlParams = new URLSearchParams(window.location.search);
         const photoId = urlParams.get('id');
 
-        // ตรวจจับแอปพลิเคชัน (LINE, Facebook, IG)
+        // ตรวจจับแอปพลิเคชันและอุปกรณ์
         const ua = navigator.userAgent || navigator.vendor || window.opera;
         const isInAppBrowser = (ua.indexOf("Line") > -1) || (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
+        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
 
         if (isInAppBrowser) {
-            // โชว์ป้ายเตือนถ้าลูกค้าดื้อเปิดผ่าน In-app browser แล้วมันไม่ยอมเด้งออก
             document.getElementById('line-warning').style.display = 'block';
+        }
+
+        // ถ้าเป็น iOS ให้โชว์ป้ายเตือน และเปลี่ยนข้อความปุ่ม
+        if (isIOS) {
+            document.getElementById('ios-warning').style.display = 'block';
+            // เปลี่ยนข้อความบนปุ่ม
+            setTimeout(() => {
+                document.getElementById('text-btn-color').textContent = "แตะค้างที่รูปภาพเพื่อบันทึก 👆";
+                document.getElementById('text-btn-bw').textContent = "แตะค้างที่รูปภาพเพื่อบันทึก 👆";
+                // เปลี่ยนไอคอนปุ่ม
+                document.querySelector('#btn-color i').className = "fa-regular fa-hand-pointer";
+                document.querySelector('#btn-bw i').className = "fa-regular fa-hand-pointer";
+            }, 100);
         }
 
         async function fetchPhoto() {
@@ -127,7 +149,13 @@
             if(!photoData) return;
             const targetUrl = type === 'color' ? photoData.url : photoData.bw_url;
 
-            // ถ้าเปิดผ่านแอป LINE/FB ให้กดปุ่มแล้วเปิดรูปเต็มจอ เพื่อให้แตะค้างเซฟง่ายๆ
+            // ถ้าเป็น iPhone พอกดปุ่มจะเด้ง Alert บอกให้กดค้าง
+            if (isIOS) {
+                alert("📱 วิธีบันทึกลงแอป Photos:\nกรุณาใช้นิ้วแตะ 'ค้างไว้ที่รูปภาพ' จากนั้นเลือกเมนู 'บันทึกรูปภาพ' (Save Image) ครับ");
+                return;
+            }
+
+            // ถ้าเป็นแอปโซเชียล เปิดรูปเต็มจอเผื่อให้โหลดง่ายๆ
             if (isInAppBrowser) {
                 window.location.href = targetUrl;
                 return;
