@@ -9,7 +9,6 @@
 </head>
 <body class="bg-zinc-950 text-white min-h-screen flex flex-col font-sans">
 
-    <!-- Header -->
     <header class="bg-zinc-900 border-b border-zinc-800 p-4 text-center sticky top-0 z-10 shadow-lg">
         <h1 class="text-xl font-black tracking-widest uppercase text-sky-400">BLESSING SNAP</h1>
         <p class="text-xs text-zinc-400 mt-1 uppercase tracking-wider">Thanks for joining us!</p>
@@ -30,14 +29,16 @@
             <p class="text-xs text-zinc-500 mt-2">ลิงก์อาจหมดอายุ หรือถูกลบออกจากระบบแล้ว</p>
         </div>
 
+        <!-- 🌟 ป้ายแจ้งเตือนเฉพาะตอนเปิดในแอป LINE/FB 🌟 -->
+        <div id="line-warning" class="hidden w-full bg-red-900/80 border border-red-500 text-white p-3.5 rounded-xl text-sm mb-2 text-center shadow-lg leading-relaxed">
+            <i class="fa-solid fa-triangle-exclamation text-lg text-red-300 mb-1 block"></i>
+            คุณกำลังเปิดผ่านแอปพลิเคชันที่บล็อกการโหลดรูป<br>
+            กรุณากดปุ่ม <b><i class="fa-solid fa-ellipsis-vertical mx-1"></i> (3 จุดมุมขวาบน)</b><br>
+            แล้วเลือก <b>"เปิดด้วยเบราว์เซอร์เริ่มต้น"</b> เพื่อบันทึกรูปภาพครับ
+        </div>
+
         <!-- Photos Container -->
         <div id="photo-container" class="hidden w-full pb-10">
-            
-            <!-- 🌟 ป้ายแนะนำการเซฟรูปสำหรับ Line 🌟 -->
-            <div class="text-center bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 text-[13px] px-4 py-2.5 rounded-lg mb-6 shadow-lg">
-                <i class="fa-solid fa-lightbulb mr-1"></i> <b>เคล็ดลับ:</b> แตะ <b>"ค้างไว้ที่รูปภาพ"</b> เพื่อบันทึกลงเครื่องได้เลย
-            </div>
-            
             <div class="space-y-8">
                 <!-- Color Photo -->
                 <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-xl">
@@ -67,7 +68,6 @@
                     </button>
                 </div>
             </div>
-
         </div>
     </main>
 
@@ -75,7 +75,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-        // ใช้ API Key เดิมของคุณเบนซ์
         const firebaseConfig = {
             apiKey: "AIzaSyA57qyFTexeNyRMTTLUJMNC5Bm24L_K0io",
             authDomain: "blessing-snap.firebaseapp.com",
@@ -87,37 +86,35 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
         let photoData = null;
 
-        // ดึงพารามิเตอร์ ?id=xxxxx ออกมาจาก URL
         const urlParams = new URLSearchParams(window.location.search);
         const photoId = urlParams.get('id');
 
+        // ตรวจจับแอปพลิเคชัน (LINE, Facebook, IG)
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
+        const isInAppBrowser = (ua.indexOf("Line") > -1) || (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1);
+
+        if (isInAppBrowser) {
+            // โชว์ป้ายเตือนถ้าลูกค้าดื้อเปิดผ่าน In-app browser แล้วมันไม่ยอมเด้งออก
+            document.getElementById('line-warning').style.display = 'block';
+        }
+
         async function fetchPhoto() {
-            if (!photoId) {
-                showError();
-                return;
-            }
-
+            if (!photoId) return showError();
             try {
-                const docRef = doc(db, "photos", photoId);
-                const docSnap = await getDoc(docRef);
-
+                const docSnap = await getDoc(doc(db, "photos", photoId));
                 if (docSnap.exists()) {
                     photoData = docSnap.data();
-                    
                     document.getElementById('img-color').src = photoData.url;
                     document.getElementById('img-bw').src = photoData.bw_url;
-
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('photo-container').style.display = 'block';
                 } else {
                     showError();
                 }
             } catch (error) {
-                console.error("Error fetching document:", error);
-                showError();
+                console.error(error); showError();
             }
         }
 
@@ -126,18 +123,12 @@
             document.getElementById('error').style.display = 'flex';
         }
 
-        // ฟังก์ชันช่วยดาวน์โหลด
         window.downloadImage = async (type) => {
             if(!photoData) return;
             const targetUrl = type === 'color' ? photoData.url : photoData.bw_url;
-            
-            // 🌟 ตรวจจับว่าลูกค้าเปิดผ่านแอป Line หรือไม่ 🌟
-            const ua = navigator.userAgent || navigator.vendor || window.opera;
-            const isLineApp = (ua.indexOf("Line") > -1);
-            const isFacebookApp = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1);
 
-            // ถ้าเป็น Line หรือ FB มันจะบล็อกปุ่มดาวน์โหลด เราจึงให้มันเปิดรูปภาพเพียวๆ ขึ้นมาแทน เพื่อให้ลูกค้ากดค้างเซฟง่ายๆ
-            if (isLineApp || isFacebookApp) {
+            // ถ้าเปิดผ่านแอป LINE/FB ให้กดปุ่มแล้วเปิดรูปเต็มจอ เพื่อให้แตะค้างเซฟง่ายๆ
+            if (isInAppBrowser) {
                 window.location.href = targetUrl;
                 return;
             }
@@ -145,7 +136,6 @@
             const fileName = `BlessingSnap_${type}_${Date.now()}.jpg`;
 
             try {
-                // สำหรับเบราว์เซอร์ปกติ (Chrome/Safari) ให้ทำการบังคับดาวน์โหลดแบบ Blob
                 const response = await fetch(targetUrl);
                 const blob = await response.blob();
                 const blobUrl = window.URL.createObjectURL(blob);
@@ -160,13 +150,10 @@
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(blobUrl);
             } catch(e) {
-                console.error("Download Error: ", e);
-                // เผื่อมือถือรุ่นเก่าบางรุ่น ให้ใช้วิธีเปิดแท็บใหม่แทน
                 window.location.href = targetUrl;
             }
         };
 
-        // เริ่มต้นการทำงานเมื่อหน้าเว็บโหลดเสร็จ
         fetchPhoto();
     </script>
 </body>

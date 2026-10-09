@@ -643,19 +643,17 @@
             uploadToFirebase();
         };
 
-        const uploadToFirebase = async () => {
+            const uploadToFirebase = async () => {
             const qrBox = document.getElementById('qrcode'), stat = document.getElementById('qr-status');
             qrBox.innerHTML = ""; stat.textContent = "กำลังอัปโหลด...";
             try {
                 const baseName = `photo_${Date.now()}`;
                 
-                // อัปโหลดขึ้นไปทั้ง 2 ไฟล์เสมอ เพื่อให้ Landing page ดึงไปโชว์คู่กัน
                 const [cUrl, bwUrl] = await Promise.all([
                     uploadString(ref(storage, `photos/C_${baseName}.jpg`), state.digitalColorData, 'data_url').then(s=>getDownloadURL(s.ref)),
                     uploadString(ref(storage, `photos/BW_${baseName}.jpg`), state.digitalBwData, 'data_url').then(s=>getDownloadURL(s.ref))
                 ]);
 
-                // เซฟลง Firestore
                 const docRef = await addDoc(collection(db, "photos"), { 
                     url: cUrl, 
                     bw_url: bwUrl,
@@ -663,13 +661,13 @@
                     createdAt: serverTimestamp() 
                 });
 
-                // สร้างลิงก์ชี้ไปที่ share.html พร้อมส่ง Document ID ของรูปนี้ไป
                 let baseUrl = window.location.origin + window.location.pathname;
                 if (baseUrl.endsWith('index.html')) baseUrl = baseUrl.replace('/index.html', '');
                 if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
-                const shareUrl = `${baseUrl}/share.html?id=${docRef.id}`;
+                
+                // 🌟 ทริคลับ: เติม &openExternalBrowser=1 เพื่อบังคับให้ LINE เด้งออกไป Chrome/Safari อัตโนมัติ 🌟
+                const shareUrl = `${baseUrl}/share.html?id=${docRef.id}&openExternalBrowser=1`;
 
-                // โชว์ QR Code อันเดียว แต่ลูกค้ากดได้ 2 รูป
                 new QRCode(qrBox, { text: shareUrl, width: 160, height: 160 }); 
                 stat.textContent = "แสกนโหลดรูป (QR CODE)"; 
                 document.getElementById('qr-hint').style.display = 'block';
