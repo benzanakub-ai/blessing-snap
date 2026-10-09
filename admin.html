@@ -21,8 +21,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
     import { getFirestore, doc, getDoc, setDoc, collection, query, orderBy, onSnapshot, writeBatch, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
-    // 🌟 1. นำเข้า Firebase Storage 🌟
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-storage.js";
+    // 🌟 1. นำเข้า Firebase Storage และเพิ่ม deleteObject 🌟
+    import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-storage.js";
 
     // 🌟 ใช้ API Key เดิมของตู้เดี่ยว
     const firebaseConfig = {
@@ -467,9 +467,11 @@
       } else { selectAllBtn.innerHTML = '<i class="fa-regular fa-square"></i> เลือกทั้งหมด'; }
     }
 
+    // 🌟 อัปเดตฟังก์ชันลบรูป (ลบทั้ง Database และลบไฟล์ภาพจริงใน Storage ทิ้งทั้งคู่) 🌟
     window.bulkDelete = async () => {
       if (selectedPhotoIds.size === 0) return;
-      if (!confirm(`ยืนยันการลบรูปภาพที่เลือกจำนวน ${selectedPhotoIds.size} รูปใช่หรือไม่?\n(ข้อมูลจะถูกลบถาวร)`)) return;
+      if (!confirm(`ยืนยันการลบรูปภาพที่เลือกจำนวน ${selectedPhotoIds.size} รูปใช่หรือไม่?\n(คำเตือน: ข้อมูลและไฟล์ภาพจะถูกลบทิ้งอย่างถาวร กู้คืนไม่ได้)`)) return;
+      
       const deleteBtn = document.getElementById('bulkDeleteBtn');
       const originalText = deleteBtn.innerHTML;
       deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> กำลังลบ...`;
@@ -477,10 +479,52 @@
 
       try {
         const batch = writeBatch(db);
-        selectedPhotoIds.forEach(id => { batch.delete(doc(db, "photos", id)); });
-        await batch.commit(); selectedPhotoIds.clear();
-      } catch (error) { alert("เกิดข้อผิดพลาดในการลบ: " + error.message); } 
-      finally { deleteBtn.innerHTML = originalText; updateToolbarStatus(); }
+        let storageDeletePromises = [];
+
+        // วนลูปรูปภาพทั้งหมดที่ถูกเลือก
+        currentPhotos.forEach(photo => {
+          if (selectedPhotoIds.has(photo.id)) {
+            // 1. เพิ่มคำสั่งลบข้อมูล Database ใส่ Batch
+            batch.delete(doc(db, "photos", photo.id));
+
+            // 2. ดึง URL ของภาพสี และ ภาพขาวดำ (ถ้ามี) มาสกัดหาชื่อไฟล์เพื่อลบออกจาก Storage
+            const urlsToDelete = [];
+            if (photo.url) urlsToDelete.push(photo.url);
+            if (photo.bw_url) urlsToDelete.push(photo.bw_url);
+            if (photo.photoUrl) urlsToDelete.push(photo.photoUrl); // เผื่อฟิลด์เก่า
+
+            urlsToDelete.forEach(fileUrl => {
+              try {
+                // แยกชื่อไฟล์ออกจาก URL (ทำงานได้ดีกับ Firebase Storage URL)
+                const pathStartIndex = fileUrl.indexOf('/o/') + 3;
+                const pathEndIndex = fileUrl.indexOf('?alt=media');
+                if (pathStartIndex > 2 && pathEndIndex > -1) {
+                   const filePath = decodeURIComponent(fileUrl.substring(pathStartIndex, pathEndIndex));
+                   // สร้างคำสั่งลบไฟล์จริงออกจาก Storage
+                   const fileRef = ref(storage, filePath);
+                   storageDeletePromises.push(
+                       // นำเข้า deleteObject ด้านบนด้วย (เดี๋ยวจะบอกจุดแก้บรรทัด import ให้ครับ)
+                       deleteObject(fileRef).catch(e => console.warn("ไม่พบไฟล์หรือถูกลบไปแล้ว:", filePath))
+                   );
+                }
+              } catch(err) { console.warn("ดึงชื่อไฟล์ลบไม่ได้:", fileUrl); }
+            });
+          }
+        });
+
+        // สั่งทำงานพร้อมกัน: ลบไฟล์จริงบน Cloud 
+        await Promise.all(storageDeletePromises);
+        
+        // สั่งลบข้อมูลชื่อใน Database 
+        await batch.commit(); 
+        
+        selectedPhotoIds.clear();
+      } catch (error) { 
+        alert("เกิดข้อผิดพลาดในการลบ: " + error.message); 
+      } finally { 
+        deleteBtn.innerHTML = originalText; 
+        updateToolbarStatus(); 
+      }
     };
 
     window.bulkDownload = async () => {
