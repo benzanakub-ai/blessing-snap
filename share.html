@@ -15,7 +15,7 @@
         <p class="text-xs text-zinc-400 mt-1 uppercase tracking-wider">Thanks for joining us!</p>
     </header>
 
-    <main class="flex-1 p-4 flex flex-col items-center max-w-lg mx-auto w-full space-y-6 mt-4">
+    <main class="flex-1 p-4 flex flex-col items-center max-w-lg mx-auto w-full space-y-4 mt-4">
         
         <!-- Loading State -->
         <div id="loading" class="flex flex-col items-center justify-center py-20 text-zinc-400">
@@ -31,34 +31,41 @@
         </div>
 
         <!-- Photos Container -->
-        <div id="photo-container" class="hidden w-full space-y-8 pb-10">
+        <div id="photo-container" class="hidden w-full pb-10">
             
-            <!-- Color Photo -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-xl">
-                <div class="flex items-center gap-2 mb-3 px-1">
-                    <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
-                    <h2 class="font-bold text-sm uppercase tracking-wide">ภาพสี (Color)</h2>
-                </div>
-                <div class="w-full bg-black rounded-lg overflow-hidden border border-zinc-700 mb-4 flex justify-center">
-                    <img id="img-color" src="" class="w-full h-auto object-contain max-h-[60vh]">
-                </div>
-                <button onclick="downloadImage('color')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-lg active:scale-95">
-                    <i class="fa-solid fa-download"></i> บันทึกรูปภาพสี
-                </button>
+            <!-- 🌟 ป้ายแนะนำการเซฟรูปสำหรับ Line 🌟 -->
+            <div class="text-center bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 text-[13px] px-4 py-2.5 rounded-lg mb-6 shadow-lg">
+                <i class="fa-solid fa-lightbulb mr-1"></i> <b>เคล็ดลับ:</b> แตะ <b>"ค้างไว้ที่รูปภาพ"</b> เพื่อบันทึกลงเครื่องได้เลย
             </div>
+            
+            <div class="space-y-8">
+                <!-- Color Photo -->
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-xl">
+                    <div class="flex items-center gap-2 mb-3 px-1">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                        <h2 class="font-bold text-sm uppercase tracking-wide">ภาพสี (Color)</h2>
+                    </div>
+                    <div class="w-full bg-black rounded-lg overflow-hidden border border-zinc-700 mb-4 flex justify-center">
+                        <img id="img-color" src="" class="w-full h-auto object-contain max-h-[60vh] pointer-events-auto" style="-webkit-touch-callout: default;">
+                    </div>
+                    <button onclick="downloadImage('color')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-lg active:scale-95">
+                        <i class="fa-solid fa-download"></i> บันทึกรูปภาพสี
+                    </button>
+                </div>
 
-            <!-- B&W Photo -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-xl">
-                <div class="flex items-center gap-2 mb-3 px-1">
-                    <span class="w-3 h-3 rounded-full bg-zinc-400"></span>
-                    <h2 class="font-bold text-sm uppercase tracking-wide text-zinc-300">ภาพขาวดำ (Black & White)</h2>
+                <!-- B&W Photo -->
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-xl">
+                    <div class="flex items-center gap-2 mb-3 px-1">
+                        <span class="w-3 h-3 rounded-full bg-zinc-400"></span>
+                        <h2 class="font-bold text-sm uppercase tracking-wide text-zinc-300">ภาพขาวดำ (Black & White)</h2>
+                    </div>
+                    <div class="w-full bg-black rounded-lg overflow-hidden border border-zinc-700 mb-4 flex justify-center">
+                        <img id="img-bw" src="" class="w-full h-auto object-contain max-h-[60vh] pointer-events-auto" style="-webkit-touch-callout: default;">
+                    </div>
+                    <button onclick="downloadImage('bw')" class="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-lg active:scale-95 border border-zinc-600">
+                        <i class="fa-solid fa-download"></i> บันทึกรูปภาพขาวดำ
+                    </button>
                 </div>
-                <div class="w-full bg-black rounded-lg overflow-hidden border border-zinc-700 mb-4 flex justify-center">
-                    <img id="img-bw" src="" class="w-full h-auto object-contain max-h-[60vh]">
-                </div>
-                <button onclick="downloadImage('bw')" class="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 shadow-lg active:scale-95 border border-zinc-600">
-                    <i class="fa-solid fa-download"></i> บันทึกรูปภาพขาวดำ
-                </button>
             </div>
 
         </div>
@@ -119,40 +126,43 @@
             document.getElementById('error').style.display = 'flex';
         }
 
-        // ฟังก์ชันช่วยดาวน์โหลด บังคับให้โหลดลงเครื่องตรงๆ
+        // ฟังก์ชันช่วยดาวน์โหลด
         window.downloadImage = async (type) => {
             if(!photoData) return;
             const targetUrl = type === 'color' ? photoData.url : photoData.bw_url;
-            // ตั้งชื่อไฟล์ให้ชัดเจน เพื่อให้ระบบมองเป็นไฟล์รูป
+            
+            // 🌟 ตรวจจับว่าลูกค้าเปิดผ่านแอป Line หรือไม่ 🌟
+            const ua = navigator.userAgent || navigator.vendor || window.opera;
+            const isLineApp = (ua.indexOf("Line") > -1);
+            const isFacebookApp = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1);
+
+            // ถ้าเป็น Line หรือ FB มันจะบล็อกปุ่มดาวน์โหลด เราจึงให้มันเปิดรูปภาพเพียวๆ ขึ้นมาแทน เพื่อให้ลูกค้ากดค้างเซฟง่ายๆ
+            if (isLineApp || isFacebookApp) {
+                window.location.href = targetUrl;
+                return;
+            }
+
             const fileName = `BlessingSnap_${type}_${Date.now()}.jpg`;
 
             try {
-                // เปลี่ยนปุ่มเป็นสถานะกำลังโหลด (ถ้าต้องการ)
-                // ดึงรูปมาเป็นไฟล์ Blob เพื่อบังคับให้บราวเซอร์ดาวน์โหลด (ไม่ใช่เปิดแท็บใหม่)
+                // สำหรับเบราว์เซอร์ปกติ (Chrome/Safari) ให้ทำการบังคับดาวน์โหลดแบบ Blob
                 const response = await fetch(targetUrl);
                 const blob = await response.blob();
-                
-                // สร้าง URL ชั่วคราวจากไฟล์รูป
                 const blobUrl = window.URL.createObjectURL(blob);
                 
-                // สร้างลิงก์จำลอง
                 const link = document.createElement('a');
                 link.href = blobUrl;
-                // แอตทริบิวต์ download เป็นตัวสั่งให้เบราว์เซอร์ "เซฟลงเครื่อง" ไม่ใช่ "เปิดหน้าใหม่"
-                link.download = fileName; 
+                link.download = fileName;
                 
-                // จำลองการคลิกเพื่อเริ่มดาวน์โหลด
                 document.body.appendChild(link);
                 link.click();
                 
-                // คืนพื้นที่หน่วยความจำ
                 document.body.removeChild(link);
                 window.URL.revokeObjectURL(blobUrl);
-                
             } catch(e) {
                 console.error("Download Error: ", e);
-                // เผื่อมือถือรุ่นเก่าบางรุ่น ไม่รองรับ ให้ใช้วิธีเปิดแท็บใหม่แทน
-                window.open(targetUrl, '_blank');
+                // เผื่อมือถือรุ่นเก่าบางรุ่น ให้ใช้วิธีเปิดแท็บใหม่แทน
+                window.location.href = targetUrl;
             }
         };
 
