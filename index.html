@@ -6,6 +6,8 @@
     <title>BLESSING SNAP - Photobooth</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         :root { --bg-color: #080808; --surface-color: #121212; --border-color: #2a2a2a; --accent-white: #ffffff; --text-muted: #888888; }
@@ -21,7 +23,7 @@
         .btn-secondary:hover { background: #2a2a2a; border-color: var(--accent-white); }
         
         .brand-header { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; letter-spacing: 6px; font-size: 1.2rem; font-weight: 900; z-index: 20; text-transform: uppercase; pointer-events: none; }
-        .brand-badge { background: #0ea5e9; color: #fff; padding: 2px 8px; font-size: 0.75rem; border-radius: 4px; font-weight: 900; letter-spacing: 1px; }
+        .brand-badge { background: #8b5cf6; color: #fff; padding: 2px 8px; font-size: 0.75rem; border-radius: 4px; font-weight: 900; letter-spacing: 1px; }
 
         .ad-container, .ad-video, .ad-slideshow-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         .ad-video, .ad-slideshow-img { object-fit: cover; }
@@ -122,7 +124,7 @@
     </style>
 </head>
 <body>
-    <div class="brand-header">BLESSING SNAP <span class="brand-badge">V.10</span></div>
+    <div class="brand-header">BLESSING SNAP <span class="brand-badge">V.11 HIGH-RES</span></div>
 
     <section id="screen-1" class="screen active">
         <div class="ad-container">
@@ -225,7 +227,6 @@
         </div>
     </section>
 
-    <!-- ภาพรอพิมพ์ -->
     <img id="print-image" src="" alt="Print Output">
 
     <div id="loading-overlay">
@@ -605,35 +606,27 @@
             applyPixelFilter(colorCtx, w, h, 'color'); 
             if (state.processedOverlayCanvas) colorCtx.drawImage(state.processedOverlayCanvas, 0, 0, w, h);
             
-            // ถ่ายรูปโหมดสี -> เก็บ Print แบบสี
             if (state.selectedFilter === 'color') state.printData = preparePrintLayout(colorCv, w, h);
 
-            // ย้อมสีวินเทจ และย่อ 50% สำหรับ Digital (Firebase)
+            // 🌟 V.11 HIGH-RES: ยกเลิกการย่อขนาด 50% ให้เก็บภาพ 100% (1240x1754) เพื่อการ Reprint ทรงคุณภาพ 🌟
             colorCtx.globalCompositeOperation = 'multiply'; colorCtx.fillStyle = '#fff6e3'; colorCtx.fillRect(0,0,w,h); colorCtx.globalCompositeOperation = 'source-over';
-            const dColorCv = document.createElement('canvas'); dColorCv.width = w/2; dColorCv.height = h/2;
-            dColorCv.getContext('2d').drawImage(colorCv, 0, 0, w/2, h/2);
-            state.digitalColorData = dColorCv.toDataURL('image/jpeg', 0.85);
+            state.digitalColorData = colorCv.toDataURL('image/jpeg', 0.90);
 
             // --- 2. สร้างภาพขาวดำ (B&W) ---
             const bwCv = document.createElement('canvas'); bwCv.width = w; bwCv.height = h;
             const bwCtx = bwCv.getContext('2d', {willReadFrequently:true});
             bwCtx.drawImage(baseCv, 0, 0);
             
-            // บังคับแปลงเป็นขาวดำเสมอสำหรับเลเยอร์ที่ 2 (เพื่อเอาไปทำหน้า Share)
             const bwFilter = state.selectedFilter !== 'color' ? state.selectedFilter : 'bw-classic';
             applyPixelFilter(bwCtx, w, h, bwFilter); 
             if (state.processedOverlayCanvas) bwCtx.drawImage(state.processedOverlayCanvas, 0, 0, w, h);
             
-            // ถ่ายรูปโหมดขาวดำ -> เก็บ Print แบบขาวดำ (ไม่ย้อม)
             if (state.selectedFilter !== 'color') state.printData = preparePrintLayout(bwCv, w, h);
 
-            // ย้อมสีวินเทจ และย่อ 50% สำหรับ Digital (Firebase)
+            // 🌟 V.11 HIGH-RES: ยกเลิกการย่อขนาด 50% ให้เก็บภาพ 100% (1240x1754) 🌟
             bwCtx.globalCompositeOperation = 'multiply'; bwCtx.fillStyle = '#fff6e3'; bwCtx.fillRect(0,0,w,h); bwCtx.globalCompositeOperation = 'source-over';
-            const dBwCv = document.createElement('canvas'); dBwCv.width = w/2; dBwCv.height = h/2;
-            dBwCv.getContext('2d').drawImage(bwCv, 0, 0, w/2, h/2);
-            state.digitalBwData = dBwCv.toDataURL('image/jpeg', 0.85);
+            state.digitalBwData = bwCv.toDataURL('image/jpeg', 0.90);
 
-            // วาดรูปพรีวิวบนหน้าจอ (ใช้ฟิลเตอร์ที่ลูกค้าเลือก)
             const previewCv = state.selectedFilter === 'color' ? colorCv : bwCv;
             document.getElementById('strip-canvas').width = w; document.getElementById('strip-canvas').height = h;
             document.getElementById('strip-canvas').getContext('2d').drawImage(previewCv, 0, 0);
@@ -643,7 +636,7 @@
             uploadToFirebase();
         };
 
-            const uploadToFirebase = async () => {
+        const uploadToFirebase = async () => {
             const qrBox = document.getElementById('qrcode'), stat = document.getElementById('qr-status');
             qrBox.innerHTML = ""; stat.textContent = "กำลังอัปโหลด...";
             try {
@@ -664,8 +657,6 @@
                 let baseUrl = window.location.origin + window.location.pathname;
                 if (baseUrl.endsWith('index.html')) baseUrl = baseUrl.replace('/index.html', '');
                 if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
-                
-                // 🌟 ทริคลับ: เติม &openExternalBrowser=1 เพื่อบังคับให้ LINE เด้งออกไป Chrome/Safari อัตโนมัติ 🌟
                 const shareUrl = `${baseUrl}/share.html?id=${docRef.id}&openExternalBrowser=1`;
 
                 new QRCode(qrBox, { text: shareUrl, width: 160, height: 160 }); 
